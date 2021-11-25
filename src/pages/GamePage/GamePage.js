@@ -232,12 +232,9 @@ const getKingMoves = (board, currentPos, team) => {
             default:
                 break;
         }
-        console.log(oponentPiece.piece)
-        console.log(possibleMovesOponent)
 
     })
     let kingAllowedMoves = []
-    console.log(possibleMovesOponent)
     possibleMoves.forEach(possibleMove => {
         let result = false;
         possibleMovesOponent.forEach(possibleMoveOponent => {
@@ -248,7 +245,6 @@ const getKingMoves = (board, currentPos, team) => {
         if (!result)
             kingAllowedMoves.push(possibleMove)
     })
-    console.log(kingAllowedMoves)
 
     return kingAllowedMoves
 
@@ -264,14 +260,21 @@ const getPawnMoves = (board, currentPos, team) => {
             else if (!board[currentPos.row + 1][currentPos.box])
                 possibleMoves = [{ row: currentPos.row + 1, box: currentPos.box }]
 
-
         } else {
             if (!board[currentPos.row + 1][currentPos.box])
                 possibleMoves = [{ row: currentPos.row + 1, box: currentPos.box }]
 
         }
+        if (currentPos.box - 1 >= 0 && isFreeBox(board[currentPos.row + 1][currentPos.box - 1]) === "eat") {
+            possibleMoves = [...possibleMoves, { row: currentPos.row + 1, box: currentPos.box - 1 }]
+
+        }
+        if (currentPos.box - 1 >= 0 && isFreeBox(board[currentPos.row + 1][currentPos.box + 1]) === "eat") {
+            possibleMoves = [...possibleMoves, { row: currentPos.row + 1, box: currentPos.box + 1 }]
+
+        }
     }
-    else
+    else {
         if (currentPos.row === 6) {
             if (!board[currentPos.row - 1][currentPos.box] && !board[currentPos.row - 2][currentPos.box])
                 possibleMoves = [{ row: currentPos.row - 1, box: currentPos.box }, { row: currentPos.row - 2, box: currentPos.box }]
@@ -284,6 +287,13 @@ const getPawnMoves = (board, currentPos, team) => {
                 possibleMoves = [{ row: currentPos.row - 1, box: currentPos.box }]
 
         }
+        if (currentPos.box + 1 <= 7 && isFreeBox(board[currentPos.row - 1][currentPos.box - 1]) === "eat") {
+            possibleMoves = [...possibleMoves, { row: currentPos.row - 1, box: currentPos.box - 1 }]
+        }
+        if (currentPos.box + 1 <= 7 && isFreeBox(board[currentPos.row - 1][currentPos.box + 1]) === "eat") {
+            possibleMoves = [...possibleMoves, { row: currentPos.row - 1, box: currentPos.box + 1 }]
+        }
+    }
     return possibleMoves
 }
 const GamePage = () => {
