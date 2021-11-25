@@ -1,0 +1,38 @@
+.mainContainer {
+    height: 100vh;
+}
+
+.boardContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.boardRow {
+    display: flex;
+}
+
+.boxContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 90px;
+    width: 90px;
+
+}
+
+.boxColorOne {
+    background-color: #D1B486;
+}
+
+.boxColorTwo {
+    background-color: #7F5531;
+}
+
+.pieceImg {
+    height: 80px;
+    width: 80px;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
