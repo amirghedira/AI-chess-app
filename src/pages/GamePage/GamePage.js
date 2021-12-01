@@ -237,7 +237,7 @@ const getKnightMoves = (board, currentPos, team) => {
 }
 
 
-const getPawnEatingMoves = (board, currentPos, team, isExtra = false) => {
+const getPawnEatingMoves = (board, currentPos, team, isExtra = false, lastMove) => {
     const nextPawnRow = team === 'black' ? currentPos.row + 1 : currentPos.row - 1
     if (nextPawnRow < 0 && nextPawnRow > 7)
         return []
@@ -249,7 +249,7 @@ const getPawnEatingMoves = (board, currentPos, team, isExtra = false) => {
             possibleMoves = [...possibleMoves, { row: nextPawnRow, box: currentPos.box - 1 }]
 
         }
-        if (currentPos.box - 1 >= 0) {
+        if (currentPos.box + 1 >= 0) {
             possibleMoves = [...possibleMoves, { row: nextPawnRow, box: currentPos.box + 1 }]
 
         }
@@ -259,14 +259,29 @@ const getPawnEatingMoves = (board, currentPos, team, isExtra = false) => {
             possibleMoves = [...possibleMoves, { row: nextPawnRow, box: currentPos.box - 1 }]
 
         }
-        if (currentPos.box - 1 >= 0 && isFreeBox(board[nextPawnRow][currentPos.box + 1], team) === "eat") {
+        if (currentPos.box + 1 >= 0 && isFreeBox(board[nextPawnRow][currentPos.box + 1], team) === "eat") {
             possibleMoves = [...possibleMoves, { row: nextPawnRow, box: currentPos.box + 1 }]
 
+        }
+        const passedPawnMove = getPassedPawn(team, currentPos, lastMove)
+        if (passedPawnMove) {
+            possibleMoves = [...possibleMoves, passedPawnMove]
         }
         return possibleMoves
 
     }
 
+
+}
+const getPassedPawn = (team, currentPos, lastMove) => {
+    if (lastMove && lastMove.piece === 'pawn' && currentPos.row === lastMove.to.row && Math.abs(lastMove.from.row - lastMove.to.row) === 2) {
+        if (team === 'black')
+            return { row: currentPos.row + 1, box: lastMove.to.box }
+
+        else
+            return { row: currentPos.row - 1, box: lastMove.to.box }
+    } else
+        return null
 }
 const getKingPossibleMoves = (board, currentPos, team) => {
     let possibleMoves = []
@@ -310,7 +325,7 @@ const getKingMoves = (board, currentPos, team) => {
 }
 
 
-const getPawnMoves = (board, currentPos, team) => {
+const getPawnMoves = (board, currentPos, team, lastMove) => {
     let possibleMoves = []
 
     if (team === 'black') {
@@ -340,13 +355,13 @@ const getPawnMoves = (board, currentPos, team) => {
 
         }
     }
-    possibleMoves = [...possibleMoves, ...getPawnEatingMoves(board, currentPos, team, false)]
+    possibleMoves = [...possibleMoves, ...getPawnEatingMoves(board, currentPos, team, false, lastMove)]
     return possibleMoves
 }
 
 
 
-const checkPiecePreventKingCheck = (board, team, selectedPosition, isKingChecked) => {
+const checkPiecePreventKingCheck = (board, team, selectedPosition, isKingChecked, lastMove) => {
     const selectedPiece = board[selectedPosition.row][selectedPosition.box]
     if (!selectedPiece)
         return false
@@ -358,7 +373,7 @@ const checkPiecePreventKingCheck = (board, team, selectedPosition, isKingChecked
     switch (selectedPiece.piece) {
 
         case 'pawn':
-            pieceMoves = [...getPawnEatingMoves(board, selectedPosition, team), ...getPawnMoves(board, selectedPosition, team)]
+            pieceMoves = [...getPawnEatingMoves(board, selectedPosition, team), ...getPawnMoves(board, selectedPosition, team, lastMove)]
             break;
         case 'queen':
             pieceMoves = [...getBishopMoves(board, selectedPosition, team), ...getRockMoves(board, selectedPosition, team)]
@@ -415,7 +430,7 @@ const checkPiecePreventKingCheck = (board, team, selectedPosition, isKingChecked
 
 }
 
-const checkPieceMovePreventKingCheck = (board, team, clickedBox, selectedPosition, isKingChecked) => {
+const checkPieceMovePreventKingCheck = (board, team, clickedBox, selectedPosition, isKingChecked, lastMove) => {
 
 
     if (clickedBox.piece.piece === 'king')
@@ -426,7 +441,7 @@ const checkPieceMovePreventKingCheck = (board, team, clickedBox, selectedPositio
     let pieceMoves = []
     switch (clickedBox.piece.piece) {
         case 'pawn':
-            pieceMoves = [...getPawnEatingMoves(board, clickedBox, team), ...getPawnMoves(board, clickedBox, team)]
+            pieceMoves = [...getPawnEatingMoves(board, clickedBox, team), ...getPawnMoves(board, clickedBox, team, lastMove)]
             break;
         case 'queen':
             pieceMoves = [...getBishopMoves(board, clickedBox, team), ...getRockMoves(board, clickedBox)]
@@ -643,6 +658,7 @@ const GamePage = () => {
     const [lastMove, setLastMove] = React.useState(null)
     const [allowedWhiteCastling, setAllowedWhiteCastling] = React.useState({ kingSide: true, queenSide: true })
     const [allowedBlackCastling, setAllowedBlackCastling] = React.useState({ kingSide: true, queenSide: true })
+    const [eatedPieces, setEatedPieces] = React.useState([])
 
     React.useEffect(() => {
         const _boardState = [
@@ -655,6 +671,9 @@ const GamePage = () => {
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => WHITE_PAWN),
             [WHITE_ROCK, WHITE_KNIGHT, WHITE_BIPHOP, WHITE_QUEEN, WHITE_KING, WHITE_BIPHOP, WHITE_KNIGHT, WHITE_ROCK],
         ]
+        setAllowedBlackCastling({ kingSide: true, queenSide: true })
+        setAllowedWhiteCastling({ kingSide: true, queenSide: true })
+
         setBoardState(_boardState)
         setIsKingChecked(null)
         setLastMove(null)
@@ -670,7 +689,7 @@ const GamePage = () => {
             let possibleMoves = []
             switch (clickedBox.piece.piece) {
                 case 'pawn': {
-                    possibleMoves = getPawnMoves(boardState, clickedBox, currentTeam)
+                    possibleMoves = getPawnMoves(boardState, clickedBox, currentTeam, lastMove)
                     break;
                 }
                 case 'bishop': {
@@ -716,12 +735,13 @@ const GamePage = () => {
             }
             if (isKingChecked) {
                 possibleMoves = possibleMoves.filter(possibleMove => {
-                    return checkPieceMovePreventKingCheck(boardState, currentTeam, clickedBox, possibleMove, isKingChecked)
+                    return checkPieceMovePreventKingCheck(boardState, currentTeam, clickedBox, possibleMove, isKingChecked, lastMove)
                 })
             }
             setPieceSuggestions([...possibleMoves])
         }
-    }, [boardState, currentTeam, clickedBox, isKingChecked])
+        // eslint-disable-next-line
+    }, [boardState, clickedBox])
 
     React.useEffect(() => {
         if (boardState) {
@@ -743,8 +763,13 @@ const GamePage = () => {
                 setIsKingChecked({ team: currentTeam, ...kingBox, checkByPositions: checkingPiecesPositions })
         }
 
+        // eslint-disable-next-line
+    }, [boardState])
 
-    }, [boardState, currentTeam])
+    React.useEffect(() => {
+        console.log(eatedPieces)
+
+    }, [eatedPieces])
 
     React.useEffect(() => {
         if (isKingChecked) {
@@ -753,6 +778,7 @@ const GamePage = () => {
                 console.log(`${currentTeam} has lost`)
             }
         }
+        // eslint-disable-next-line
     }, [isKingChecked])
 
     const getColorBox = (rowIndex, boxIndex) => {
@@ -773,12 +799,12 @@ const GamePage = () => {
         if (isKingChecked && isKingChecked.team === currentTeam) {
             if (!clickedBox) {
                 if (boardState[row][box]) {
-                    if (!checkPiecePreventKingCheck(boardState, currentTeam, { row, box }, isKingChecked))
+                    if (!checkPiecePreventKingCheck(boardState, currentTeam, { row, box }, isKingChecked, lastMove))
                         return setClickedBox(null)
 
                 }
             } else {
-                if (!checkPieceMovePreventKingCheck(boardState, currentTeam, clickedBox, { row, box }, isKingChecked))
+                if (!checkPieceMovePreventKingCheck(boardState, currentTeam, clickedBox, { row, box }, isKingChecked, lastMove))
                     return setClickedBox(null)
             }
         }
@@ -813,7 +839,7 @@ const GamePage = () => {
 
                     return 'white'
                 })
-                setLastMove({ from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece })
+                setLastMove({ from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece })
                 if (isKingChecked)
                     setIsKingChecked(null)
                 const _boardState = [...boardState];
@@ -825,13 +851,19 @@ const GamePage = () => {
                             _boardState[row][box] = clickedBox.piece
                             _boardState[row][3] = _boardState[row][0]
                             _boardState[row][0] = null
-                            return setBoardState([..._boardState])
+                            setBoardState([..._boardState])
+                            setPieceSuggestions([])
+                            setClickedBox(null)
+                            return
 
                         } else if (row === 0 && box === 6 && allowedBlackCastling.kingSide) {
                             _boardState[row][box] = clickedBox.piece
                             _boardState[row][5] = _boardState[row][7]
                             _boardState[row][7] = null
-                            return setBoardState([..._boardState])
+                            setBoardState([..._boardState])
+                            setPieceSuggestions([])
+                            setClickedBox(null)
+                            return
                         }
 
                     } else {
@@ -840,18 +872,41 @@ const GamePage = () => {
                             _boardState[row][3] = _boardState[row][0]
                             _boardState[row][0] = null
 
-                            return setBoardState([..._boardState])
+                            setBoardState([..._boardState])
+                            setPieceSuggestions([])
+                            setClickedBox(null)
+                            return
                         } else if (row === 7 && box === 6 && allowedWhiteCastling.kingSide) {
 
                             _boardState[row][box] = clickedBox.piece
                             _boardState[row][5] = _boardState[row][7]
                             _boardState[row][7] = null
-                            return setBoardState([..._boardState])
+                            setBoardState([..._boardState])
+                            setPieceSuggestions([])
+                            setClickedBox(null)
+                            return
+                        }
+                    }
+                }
+                if (clickedBox.piece && clickedBox.piece.piece === 'pawn') {
+                    const passedPawnMove = getPassedPawn(currentTeam, clickedBox, lastMove)
+                    if (passedPawnMove) {
+                        if (passedPawnMove.row === row && passedPawnMove.box === box) {
+                            if (currentTeam === 'black')
+                                _boardState[row - 1][box] = null
+                            else
+                                _boardState[row + 1][box] = null
+
+
                         }
                     }
                 }
 
+                if (boardState[row][box]) {
+                    setEatedPieces([...eatedPieces, boardState[row][box]])
+                }
                 _boardState[row][box] = clickedBox.piece
+
                 setBoardState([..._boardState])
             }
             setPieceSuggestions([])
@@ -907,11 +962,21 @@ const GamePage = () => {
 
         return result
     }
+    const checkIsLastMove = (row, box) => {
+        if (!lastMove)
+            return false
+        return (lastMove.from.row === row && lastMove.from.box === box) || (lastMove.to.row === row && lastMove.to.box === box)
+    }
     if (!boardState)
         return null
     return (
         <Container fluid className={classes.mainContainer}>
-            <Row style={{ display: 'flex', height: '100%', alignItems: 'center' }}>
+            <Row style={{ height: '100%', alignItems: 'center', display: 'flex' }}>
+                <Col xs="1">
+                    {eatedPieces.filter(eatedPiece => eatedPiece.team === 'white').map((piece, key) => {
+                        return <div className={classes.pieceImg} key={key} style={{ backgroundImage: `url(${piece.img})`, height: '50px', width: '50px' }} />
+                    })}
+                </Col>
                 <Col className={classes.boardContainer}>
                     <div>
                         {boardState.map((row, rowIndex) => (
@@ -919,11 +984,11 @@ const GamePage = () => {
                                 {row.map((box, boxIndex) => (
                                     <div key={boxIndex} onClick={() => clickedPieceHandler(rowIndex, boxIndex)}
 
-                                        style={{ backgroundColor: checkCheckedKing(rowIndex, boxIndex) ? '#ad0000' : checkClickedPiece(rowIndex, boxIndex) ? '#B1833E' : `${getColorBox(rowIndex, boxIndex)}` }}
+                                        style={{ backgroundColor: checkCheckedKing(rowIndex, boxIndex) ? '#ad0000' : checkClickedPiece(rowIndex, boxIndex) ? '#B1833E' : checkIsLastMove(rowIndex, boxIndex) ? '#b38b51' : `${getColorBox(rowIndex, boxIndex)}` }}
                                         className={classes.boxContainer}>
-                                        {isValidNextGame(rowIndex, boxIndex) && isFreeBox(box, currentTeam) === "eat" ? <div className={classes.eatMoveBox}></div>
+                                        {clickedBox && isValidNextGame(rowIndex, boxIndex) && isFreeBox(box, currentTeam) === "eat" ? <div className={classes.eatMoveBox}></div>
                                             :
-                                            isValidNextGame(rowIndex, boxIndex) && <div className={classes.possibleMoveBox}></div>
+                                            clickedBox && isValidNextGame(rowIndex, boxIndex) && <div className={classes.possibleMoveBox}></div>
 
                                         }
                                         {box && <div className={classes.pieceImg} style={{ backgroundImage: `url(${box.img})` }} />}
@@ -934,6 +999,11 @@ const GamePage = () => {
                             </div>
                         ))}
                     </div>
+                </Col>
+                <Col xs="1">
+                    {eatedPieces.filter(eatedPiece => eatedPiece.team === 'black').map((piece, key) => {
+                        return <div className={classes.pieceImg} key={key} style={{ backgroundImage: `url(${piece.img})`, height: '50px', width: '50px' }} />
+                    })}
                 </Col>
             </Row>
         </Container>

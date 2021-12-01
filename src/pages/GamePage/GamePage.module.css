@@ -1,5 +1,6 @@
 .mainContainer {
     height: 100vh;
+    background-color: rgb(201, 201, 201);
 }
 
 .boardContainer {
