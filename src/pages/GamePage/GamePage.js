@@ -1,6 +1,18 @@
 import React from 'react'
 import { Row, Col, Container } from 'reactstrap'
 import classes from './GamePage.module.css'
+import {
+    getBishopMoves,
+    getKnightMoves,
+    getPawnMoves,
+    getKingMoves,
+    getRockMoves,
+    isCheckedKing,
+    checkPieceMovePreventKingCheck,
+    checkPiecePreventKingCheck,
+    getPassedPawn,
+    isFreeBox
+} from '../../utils/GameFunctions'
 import whitePawnPieceImg from '../../assets/pieces/white_pawn.png'
 import blackPawnPieceImg from '../../assets/pieces/black_pawn.png'
 import blackRockPieceImg from '../../assets/pieces/black_rock.png'
@@ -30,624 +42,6 @@ const BLACK_KING = { piece: 'king', team: 'black', value: '0', img: blackKingPie
 const BLACK_BIPHOP = { piece: 'bishop', team: 'black', value: '9', img: blackbishopPieceImg }
 
 
-
-const isFreeBox = (box, team) => {
-
-    if (!box)
-        return "empty"
-
-    if (box.team !== team)
-        return "eat"
-    return false
-}
-
-const getBishopTopLeftPath = (board, currentPos, team) => {
-    let i = currentPos.row + 1;
-    let j = currentPos.box + 1;
-    let possibleMoves = []
-    while (i <= 7 && j <= 7 && isFreeBox(board[i][j], team)) {
-
-        possibleMoves.push({ row: i, box: j })
-        if (isFreeBox(board[i][j], team) === "eat") {
-            break;
-        }
-        i++;
-        j++;
-
-    }
-    return possibleMoves
-}
-
-const getBishopTopRightPath = (board, currentPos, team) => {
-    let possibleMoves = []
-    let i = currentPos.row - 1;
-    let j = currentPos.box - 1;
-    while (i >= 0 && j >= 0 && (isFreeBox(board[i][j], team))) {
-
-        possibleMoves.push({ row: i, box: j })
-
-
-        if (isFreeBox(board[i][j], team) === "eat") {
-            break;
-        }
-        i--;
-        j--;
-
-    }
-    return possibleMoves
-}
-
-const getBishopBottomLeftPath = (board, currentPos, team) => {
-    let possibleMoves = []
-    let i = currentPos.row - 1;
-    let j = currentPos.box + 1;
-    while (i >= 0 && j <= 7 && (isFreeBox(board[i][j], team))) {
-
-        possibleMoves.push({ row: i, box: j })
-
-        if (isFreeBox(board[i][j], team) === "eat") {
-            break;
-        }
-        i--;
-        j++;
-
-    }
-    return possibleMoves
-}
-const getBishopBottomRightPath = (board, currentPos, team) => {
-
-    let possibleMoves = []
-    let i = currentPos.row + 1;
-    let j = currentPos.box - 1;
-    while (i <= 7 && j >= 0 && (isFreeBox(board[i][j], team))) {
-
-        possibleMoves.push({ row: i, box: j })
-        if (isFreeBox(board[i][j], team) === "eat") {
-            break;
-        }
-        i++;
-        j--;
-
-
-    }
-
-    return possibleMoves
-}
-
-const getBishopMoves = (board, currentPos, team) => {
-
-
-    const possibleMoves = [...getBishopBottomLeftPath(board, currentPos, team),
-    ...getBishopBottomRightPath(board, currentPos, team),
-    ...getBishopTopLeftPath(board, currentPos, team),
-    ...getBishopTopRightPath(board, currentPos, team)
-    ]
-    return possibleMoves
-}
-
-const getRockTopMoves = (board, currentPos, team) => {
-    let possibleMoves = []
-
-    let i = currentPos.row - 1;
-    while (i >= 0 && (isFreeBox(board[i][currentPos.box], team))) {
-        possibleMoves.push({ row: i, box: currentPos.box })
-        if (isFreeBox(board[i][currentPos.box], team) === "eat") {
-            break;
-
-        }
-        i--
-    }
-
-    return possibleMoves;
-
-}
-
-const getRockLeftMoves = (board, currentPos, team) => {
-    let possibleMoves = []
-    let i = currentPos.row + 1;
-    while (i < 8 && (isFreeBox(board[i][currentPos.box], team))) {
-        possibleMoves.push({ row: i, box: currentPos.box })
-        if (isFreeBox(board[i][currentPos.box], team) === "eat") {
-            break;
-        }
-        i++
-    }
-
-    return possibleMoves;
-
-}
-const getRockRightMoves = (board, currentPos, team) => {
-    let possibleMoves = []
-    let j = currentPos.box + 1;
-    while (j < 8 && (isFreeBox(board[currentPos.row][j], team))) {
-
-        possibleMoves.push({ row: currentPos.row, box: j })
-        if (isFreeBox(board[currentPos.row][j], team) === "eat") {
-            break;
-
-        }
-
-        j++
-    }
-
-    return possibleMoves;
-
-}
-const getRockBottomMoves = (board, currentPos, team) => {
-    let possibleMoves = []
-    let j = currentPos.box - 1;
-    while (j >= 0 && (isFreeBox(board[currentPos.row][j], team))) {
-        possibleMoves.push({ row: currentPos.row, box: j })
-        if (isFreeBox(board[currentPos.row][j], team) === "eat") {
-            break;
-
-        }
-
-        j--
-    }
-
-    return possibleMoves;
-
-}
-
-const getRockMoves = (board, currentPos, team) => {
-
-
-    return [...getRockBottomMoves(board, currentPos, team),
-    ...getRockTopMoves(board, currentPos, team),
-    ...getRockLeftMoves(board, currentPos, team),
-    ...getRockRightMoves(board, currentPos, team)];
-}
-
-const getKnightMoves = (board, currentPos, team) => {
-
-    let possibleMoves = []
-    if (currentPos.box - 1 >= 0 && currentPos.row + 2 <= 7 && isFreeBox(board[currentPos.row + 2][currentPos.box - 1], team))
-        possibleMoves.push({ row: currentPos.row + 2, box: currentPos.box - 1 })
-
-
-    if (currentPos.box + 1 <= 7 && currentPos.row + 2 <= 7 && isFreeBox(board[currentPos.row + 2][currentPos.box + 1], team))
-        possibleMoves.push({ row: currentPos.row + 2, box: currentPos.box + 1 })
-
-
-    if (currentPos.box - 1 >= 0 && currentPos.row - 2 >= 0 && isFreeBox(board[currentPos.row - 2][currentPos.box - 1], team))
-        possibleMoves.push({ row: currentPos.row - 2, box: currentPos.box - 1 })
-
-
-    if (currentPos.box + 1 <= 7 && currentPos.row - 2 >= 0 && isFreeBox(board[currentPos.row - 2][currentPos.box + 1], team))
-        possibleMoves.push({ row: currentPos.row - 2, box: currentPos.box + 1 })
-
-
-
-    if (currentPos.box - 2 >= 0 && currentPos.row + 1 <= 7 && isFreeBox(board[currentPos.row + 1][currentPos.box - 2], team))
-        possibleMoves.push({ row: currentPos.row + 1, box: currentPos.box - 2 })
-
-
-    if (currentPos.box + 2 <= 7 && currentPos.row + 1 <= 7 && isFreeBox(board[currentPos.row + 1][currentPos.box + 2], team))
-        possibleMoves.push({ row: currentPos.row + 1, box: currentPos.box + 2 })
-
-
-    if (currentPos.box - 2 >= 0 && currentPos.row - 1 >= 0 && isFreeBox(board[currentPos.row - 1][currentPos.box - 2], team))
-        possibleMoves.push({ row: currentPos.row - 1, box: currentPos.box - 2 })
-
-
-    if (currentPos.box + 2 <= 7 && currentPos.row - 1 >= 0 && isFreeBox(board[currentPos.row - 1][currentPos.box + 2], team))
-        possibleMoves.push({ row: currentPos.row - 1, box: currentPos.box + 2 })
-    return possibleMoves
-}
-
-
-const getPawnEatingMoves = (board, currentPos, team, isExtra = false, lastMove) => {
-    const nextPawnRow = team === 'black' ? currentPos.row + 1 : currentPos.row - 1
-    if (nextPawnRow < 0 && nextPawnRow > 7)
-        return []
-
-
-    let possibleMoves = []
-    if (isExtra) {
-        if (currentPos.box - 1 >= 0) {
-            possibleMoves = [...possibleMoves, { row: nextPawnRow, box: currentPos.box - 1 }]
-
-        }
-        if (currentPos.box + 1 >= 0) {
-            possibleMoves = [...possibleMoves, { row: nextPawnRow, box: currentPos.box + 1 }]
-
-        }
-        return possibleMoves
-    } else {
-        if (currentPos.box - 1 >= 0 && isFreeBox(board[nextPawnRow][currentPos.box - 1], team) === "eat") {
-            possibleMoves = [...possibleMoves, { row: nextPawnRow, box: currentPos.box - 1 }]
-
-        }
-        if (currentPos.box + 1 >= 0 && isFreeBox(board[nextPawnRow][currentPos.box + 1], team) === "eat") {
-            possibleMoves = [...possibleMoves, { row: nextPawnRow, box: currentPos.box + 1 }]
-
-        }
-        const passedPawnMove = getPassedPawn(team, currentPos, lastMove)
-        if (passedPawnMove) {
-            possibleMoves = [...possibleMoves, passedPawnMove]
-        }
-        return possibleMoves
-
-    }
-
-
-}
-const getPassedPawn = (team, currentPos, lastMove) => {
-    if (lastMove && lastMove.piece === 'pawn' && currentPos.row === lastMove.to.row && Math.abs(lastMove.from.row - lastMove.to.row) === 2) {
-        if (team === 'black')
-            return { row: currentPos.row + 1, box: lastMove.to.box }
-
-        else
-            return { row: currentPos.row - 1, box: lastMove.to.box }
-    } else
-        return null
-}
-const getKingPossibleMoves = (board, currentPos, team) => {
-    let possibleMoves = []
-    if (isFreeBox(board[currentPos.row][currentPos.box - 1], team) && currentPos.box - 1 >= 0)
-        possibleMoves.push({ row: currentPos.row, box: currentPos.box - 1 })
-    if (isFreeBox(board[currentPos.row][currentPos.box + 1], team) && currentPos.box + 1 <= 7)
-        possibleMoves.push({ row: currentPos.row, box: currentPos.box + 1 })
-
-    if (currentPos.row + 1 <= 7) {
-        if (isFreeBox(board[currentPos.row + 1][currentPos.box - 1], team) && currentPos.box - 1 >= 0)
-            possibleMoves.push({ row: currentPos.row + 1, box: currentPos.box - 1 })
-        if (isFreeBox(board[currentPos.row + 1][currentPos.box], team))
-            possibleMoves.push({ row: currentPos.row + 1, box: currentPos.box })
-        if (isFreeBox(board[currentPos.row + 1][currentPos.box + 1], team) && currentPos.box + 1 <= 7)
-            possibleMoves.push({ row: currentPos.row + 1, box: currentPos.box + 1 })
-    }
-    if (currentPos.row - 1 >= 0) {
-        if (isFreeBox(board[currentPos.row - 1][currentPos.box - 1], team) && currentPos.box - 1 >= 0)
-            possibleMoves.push({ row: currentPos.row - 1, box: currentPos.box - 1 })
-        if (isFreeBox(board[currentPos.row - 1][currentPos.box], team))
-            possibleMoves.push({ row: currentPos.row - 1, box: currentPos.box })
-        if (isFreeBox(board[currentPos.row - 1][currentPos.box + 1], team) && currentPos.box + 1 <= 7)
-            possibleMoves.push({ row: currentPos.row - 1, box: currentPos.box + 1 })
-    }
-    return possibleMoves
-}
-
-
-const getKingMoves = (board, currentPos, team) => {
-
-
-    let possibleMoves = getKingPossibleMoves(board, currentPos, team)
-    let kingAllowedMoves = []
-    possibleMoves.forEach(possibleMove => {
-        if (isCheckedKing(board, team, possibleMove).length === 0)
-            kingAllowedMoves.push(possibleMove)
-    })
-
-    return kingAllowedMoves
-
-}
-
-
-const getPawnMoves = (board, currentPos, team, lastMove) => {
-    let possibleMoves = []
-
-    if (team === 'black') {
-        if (currentPos.row === 1) {
-            if (!board[currentPos.row + 1][currentPos.box] && !board[currentPos.row + 2][currentPos.box])
-                possibleMoves = [{ row: currentPos.row + 1, box: currentPos.box }, { row: currentPos.row + 2, box: currentPos.box }]
-            else if (!board[currentPos.row + 1][currentPos.box])
-                possibleMoves = [{ row: currentPos.row + 1, box: currentPos.box }]
-
-        } else {
-            if (!board[currentPos.row + 1][currentPos.box])
-                possibleMoves = [{ row: currentPos.row + 1, box: currentPos.box }]
-
-        }
-    }
-    else {
-        if (currentPos.row === 6) {
-            if (!board[currentPos.row - 1][currentPos.box] && !board[currentPos.row - 2][currentPos.box])
-                possibleMoves = [{ row: currentPos.row - 1, box: currentPos.box }, { row: currentPos.row - 2, box: currentPos.box }]
-            else if (!board[currentPos.row - 1][currentPos.box])
-                possibleMoves = [{ row: currentPos.row - 1, box: currentPos.box }]
-
-        } else {
-            if (!board[currentPos.row - 1][currentPos.box])
-
-                possibleMoves = [{ row: currentPos.row - 1, box: currentPos.box }]
-
-        }
-    }
-    possibleMoves = [...possibleMoves, ...getPawnEatingMoves(board, currentPos, team, false, lastMove)]
-    return possibleMoves
-}
-
-
-
-const checkPiecePreventKingCheck = (board, team, selectedPosition, isKingChecked, lastMove) => {
-    const selectedPiece = board[selectedPosition.row][selectedPosition.box]
-    if (!selectedPiece)
-        return false
-    if (selectedPiece.piece === 'king')
-        return true
-
-
-    let pieceMoves = []
-    switch (selectedPiece.piece) {
-
-        case 'pawn':
-            pieceMoves = [...getPawnEatingMoves(board, selectedPosition, team), ...getPawnMoves(board, selectedPosition, team, lastMove)]
-            break;
-        case 'queen':
-            pieceMoves = [...getBishopMoves(board, selectedPosition, team), ...getRockMoves(board, selectedPosition, team)]
-            break;
-        case 'bishop':
-            pieceMoves = [...getBishopMoves(board, selectedPosition, team)]
-            break;
-        case 'rock':
-            pieceMoves = [...getRockMoves(board, selectedPosition, team)]
-            break;
-        case 'knight':
-            pieceMoves = [...getKnightMoves(board, selectedPosition, team)]
-            break;
-        default:
-            break;
-    }
-
-    if (pieceMoves.length === 0)
-        return false
-
-    let canEatPiece = false
-
-
-    if (isKingChecked.checkByPositions.length === 1) {
-        let i = 0
-        while (!canEatPiece && i < pieceMoves.length) {
-            if (pieceMoves[i].row === isKingChecked.checkByPositions[0].row && pieceMoves[i].box === isKingChecked.checkByPositions[0].box) {
-                canEatPiece = true
-            }
-            i++
-        }
-    }
-
-    let k = 0;
-    let canMovePiece = true
-    while (canMovePiece && k < isKingChecked.checkByPositions.length) {
-        const piecePath = getPieceCheckKingPath(board, team, { row: isKingChecked.row, box: isKingChecked.box }, isKingChecked.checkByPositions[k].piece, isKingChecked.checkByPositions[k])
-        let i = 0
-        let canMovePieceElem = false
-        while (!canMovePieceElem && i < pieceMoves.length) {
-            if (checkPathIncludesPosition(piecePath, pieceMoves[i])) {
-                canMovePieceElem = true
-            }
-            i++
-        }
-        if (!canMovePieceElem) {
-            canMovePiece = false
-        }
-        k++
-    }
-
-    return canEatPiece || canMovePiece
-
-
-}
-
-const checkPieceMovePreventKingCheck = (board, team, clickedBox, selectedPosition, isKingChecked, lastMove) => {
-
-
-    if (clickedBox.piece.piece === 'king')
-        return true
-    if (!clickedBox)
-        return false
-
-    let pieceMoves = []
-    switch (clickedBox.piece.piece) {
-        case 'pawn':
-            pieceMoves = [...getPawnEatingMoves(board, clickedBox, team), ...getPawnMoves(board, clickedBox, team, lastMove)]
-            break;
-        case 'queen':
-            pieceMoves = [...getBishopMoves(board, clickedBox, team), ...getRockMoves(board, clickedBox)]
-            break;
-        case 'bishop':
-            pieceMoves = [...getBishopMoves(board, clickedBox, team)]
-            break;
-        case 'rock':
-            pieceMoves = [...getRockMoves(board, clickedBox, team)]
-            break;
-        case 'knight':
-            pieceMoves = [...getKnightMoves(board, clickedBox, team)]
-            break;
-        default:
-            break;
-    }
-
-    if (pieceMoves.length === 0)
-        return false
-
-    let canEatPiece = false
-
-
-    if (isKingChecked.checkByPositions.length === 1) {
-        let i = 0
-
-        while (!canEatPiece && i < pieceMoves.length) {
-            if ((pieceMoves[i].row === isKingChecked.checkByPositions[0].row && pieceMoves[i].box === isKingChecked.checkByPositions[0].box)
-                && (selectedPosition.row === isKingChecked.checkByPositions[0].row && selectedPosition.box === isKingChecked.checkByPositions[0].box)) {
-                canEatPiece = true
-            }
-            i++
-        }
-    }
-    let k = 0;
-    let canMovePiece = true
-    while (canMovePiece && k < isKingChecked.checkByPositions.length) {
-        const piecePath = getPieceCheckKingPath(board, team, { row: isKingChecked.row, box: isKingChecked.box }, isKingChecked.checkByPositions[k].piece, isKingChecked.checkByPositions[k])
-        if (!checkPathIncludesPosition(piecePath, selectedPosition)) {
-            canMovePiece = false
-        }
-
-        k++
-    }
-    return canEatPiece || canMovePiece
-
-
-}
-
-
-const checkPathIncludesPosition = (pathPositions, position) => {
-    return pathPositions.findIndex(pathPosition => pathPosition.row === position.row && pathPosition.box === position.box) >= 0
-}
-const getPieceCheckKingPath = (board, team, kingPosition, piece, piecePosition) => {
-    const oponentTeam = team === 'white' ? 'black' : 'white'
-    let piecePath = []
-    switch (piece) {
-        case 'rock': {
-            const leftRockPath = getRockLeftMoves(board, piecePosition, oponentTeam, true)
-            if (checkPathIncludesPosition(leftRockPath, kingPosition)) {
-                piecePath = leftRockPath
-                break;
-            }
-            const rightRockPath = getRockRightMoves(board, piecePosition, oponentTeam, true)
-            if (checkPathIncludesPosition(rightRockPath, kingPosition)) {
-                piecePath = rightRockPath
-                break;
-            }
-            const topRockPath = getRockTopMoves(board, piecePosition, oponentTeam, true)
-            if (checkPathIncludesPosition(topRockPath, kingPosition)) {
-                piecePath = topRockPath
-                break;
-            }
-            const bottomRockPath = getRockBottomMoves(board, piecePosition, oponentTeam, true)
-            if (checkPathIncludesPosition(bottomRockPath, kingPosition)) {
-                piecePath = bottomRockPath
-                break;
-            }
-
-            break;
-
-
-        }
-        case 'bishop':
-            {
-                const bottomLeftBishopPath = getBishopBottomLeftPath(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(bottomLeftBishopPath, kingPosition)) {
-                    piecePath = bottomLeftBishopPath
-                    break;
-                }
-                const bottomRightBishopPath = getBishopBottomRightPath(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(bottomRightBishopPath, kingPosition)) {
-                    piecePath = bottomRightBishopPath
-                    break;
-                }
-                const topLeftBishopPath = getBishopTopLeftPath(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(topLeftBishopPath, kingPosition)) {
-                    piecePath = topLeftBishopPath
-                    break;
-                }
-                const topRightBishopPath = getBishopTopRightPath(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(topRightBishopPath, kingPosition)) {
-                    piecePath = topRightBishopPath
-                    break;
-                }
-
-                break;
-            }
-
-        case 'queen':
-            {
-                const leftRockPath = getRockLeftMoves(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(leftRockPath, kingPosition)) {
-                    piecePath = leftRockPath
-                    break;
-                }
-                const rightRockPath = getRockRightMoves(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(rightRockPath, kingPosition)) {
-                    piecePath = rightRockPath
-                    break;
-                }
-                const topRockPath = getRockTopMoves(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(topRockPath, kingPosition)) {
-                    piecePath = topRockPath
-                    break;
-                }
-                const bottomRockPath = getRockBottomMoves(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(bottomRockPath, kingPosition)) {
-                    piecePath = bottomRockPath
-                    break;
-                }
-
-                const bottomLeftBishopPath = getBishopBottomLeftPath(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(bottomLeftBishopPath, kingPosition)) {
-                    piecePath = bottomLeftBishopPath
-                    break;
-                }
-                const bottomRightBishopPath = getBishopBottomRightPath(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(bottomRightBishopPath, kingPosition)) {
-                    piecePath = bottomRightBishopPath
-                    break;
-                }
-                const topLeftBishopPath = getBishopTopLeftPath(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(topLeftBishopPath, kingPosition)) {
-                    piecePath = topLeftBishopPath
-                    break;
-                }
-                const topRightBishopPath = getBishopTopRightPath(board, piecePosition, oponentTeam, true)
-                if (checkPathIncludesPosition(topRightBishopPath, kingPosition)) {
-                    piecePath = topRightBishopPath
-                    break;
-                }
-
-                break;
-            }
-
-        default:
-            break;
-    }
-
-    return piecePath
-}
-
-const isCheckedKing = (board, team, kingPosition) => {
-    const oponentTeam = team === 'white' ? 'black' : 'white'
-
-    const piecesCheckingPosition = []
-    const possibleKnightMoves = getKnightMoves(board, kingPosition, team)
-    possibleKnightMoves.forEach(pos => {
-        if (board[pos.row][pos.box]?.piece === 'knight' && board[pos.row][pos.box]?.team === oponentTeam) {
-            piecesCheckingPosition.push({ ...board[pos.row][pos.box], ...pos })
-        }
-    })
-    const possibleRockMoves = getRockMoves(board, kingPosition, team)
-    possibleRockMoves.forEach(pos => {
-        if ((board[pos.row][pos.box]?.piece === 'rock' || board[pos.row][pos.box]?.piece === 'queen') && board[pos.row][pos.box]?.team === oponentTeam) {
-            piecesCheckingPosition.push({ ...board[pos.row][pos.box], ...pos })
-        }
-    })
-    const possibleBishopMoves = getBishopMoves(board, kingPosition, team)
-    possibleBishopMoves.forEach(pos => {
-        if ((board[pos.row][pos.box]?.piece === 'bishop' || board[pos.row][pos.box]?.piece === 'queen') && board[pos.row][pos.box]?.team === oponentTeam) {
-            piecesCheckingPosition.push({ ...board[pos.row][pos.box], ...pos })
-        }
-    })
-
-    let oponentPieces = []
-    board.forEach((rowBoard, rowIndex) => {
-        rowBoard.forEach((boxPiece, boxIndex) => {
-            if (boxPiece && boxPiece.team === oponentTeam && boxPiece.piece === 'pawn')
-                oponentPieces.push({ row: rowIndex, box: boxIndex, piece: boxPiece.piece })
-        })
-    })
-    let oponentPawnEatingMoves = []
-    oponentPieces.forEach(oponentPiece => {
-        oponentPawnEatingMoves = [...oponentPawnEatingMoves, ...getPawnEatingMoves(board, { row: oponentPiece.row, box: oponentPiece.box }, oponentTeam, true)]
-    })
-
-    oponentPawnEatingMoves.forEach(oponentPawnEatingMove => {
-        if (oponentPawnEatingMove.row === kingPosition.row && oponentPawnEatingMove.box === kingPosition.box)
-            piecesCheckingPosition.push({ ...board[oponentPawnEatingMove.row][oponentPawnEatingMove.box], ...oponentPawnEatingMove })
-    })
-
-    return piecesCheckingPosition
-}
-
 const GamePage = () => {
 
     const [boardState, setBoardState] = React.useState(null)
@@ -658,7 +52,10 @@ const GamePage = () => {
     const [lastMove, setLastMove] = React.useState(null)
     const [allowedWhiteCastling, setAllowedWhiteCastling] = React.useState({ kingSide: true, queenSide: true })
     const [allowedBlackCastling, setAllowedBlackCastling] = React.useState({ kingSide: true, queenSide: true })
+    const [displayedBoard, setDisplayedBoard] = React.useState(null)
     const [eatedPieces, setEatedPieces] = React.useState([])
+    const [previsousBoards, setPreviousBoards] = React.useState([])
+    const [currentBoardIndex, setCurrentBoardIndex] = React.useState(0)
 
     React.useEffect(() => {
         const _boardState = [
@@ -671,6 +68,7 @@ const GamePage = () => {
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => WHITE_PAWN),
             [WHITE_ROCK, WHITE_KNIGHT, WHITE_BIPHOP, WHITE_QUEEN, WHITE_KING, WHITE_BIPHOP, WHITE_KNIGHT, WHITE_ROCK],
         ]
+        setEatedPieces([])
         setAllowedBlackCastling({ kingSide: true, queenSide: true })
         setAllowedWhiteCastling({ kingSide: true, queenSide: true })
 
@@ -682,62 +80,93 @@ const GamePage = () => {
     }, [])
 
     React.useEffect(() => {
+        if (boardState)
+            setPreviousBoards((_previousBoards) => {
+                setCurrentBoardIndex(_previousBoards.length)
+                const newPreviousBoards = JSON.parse(JSON.stringify([..._previousBoards
+                    , JSON.parse(JSON.stringify(boardState))]))
+                return newPreviousBoards
+
+            })
+    }, [boardState])
+
+    React.useEffect(() => {
+        setDisplayedBoard(previsousBoards[currentBoardIndex])
+    }, [currentBoardIndex, previsousBoards])
+
+
+    const getPiecePossibleMoves = (box) => {
+        let possibleMoves = []
+
+        switch (box.piece?.piece) {
+            case 'pawn': {
+                possibleMoves = getPawnMoves(boardState, box, currentTeam, lastMove)
+                break;
+            }
+            case 'bishop': {
+                possibleMoves = getBishopMoves(boardState, box, currentTeam)
+                break;
+            }
+            case 'queen': {
+
+                possibleMoves = [...getBishopMoves(boardState, box, currentTeam), ...getRockMoves(boardState, box, currentTeam)]
+                break;
+            }
+            case 'rock': {
+                possibleMoves = getRockMoves(boardState, box, currentTeam)
+                break;
+            }
+            case 'knight': {
+                possibleMoves = getKnightMoves(boardState, box, currentTeam)
+
+                break;
+            }
+            case 'king': {
+                possibleMoves = getKingMoves(boardState, box, currentTeam)
+
+                if (currentTeam === 'black') {
+                    if (allowedBlackCastling.kingSide && !boardState[0][5] && !boardState[0][6] &&
+                        isCheckedKing(boardState, currentTeam, { row: 0, box: 5 }).length === 0 &&
+                        isCheckedKing(boardState, currentTeam, { row: 0, box: 6 }).length === 0) {
+                        possibleMoves = [...possibleMoves, { row: 0, box: 6 }]
+                    }
+                    if (allowedBlackCastling.queenSide && !boardState[0][1] && !boardState[0][2] && !boardState[0][3] &&
+                        isCheckedKing(boardState, currentTeam, { row: 0, box: 2 }).length === 0 &&
+                        isCheckedKing(boardState, currentTeam, { row: 0, box: 3 }).length === 0) {
+                        possibleMoves = [...possibleMoves, { row: 0, box: 2 }]
+                    }
+
+                } else {
+                    if (allowedWhiteCastling.kingSide && !boardState[7][5] && !boardState[7][6] &&
+                        isCheckedKing(boardState, currentTeam, { row: 7, box: 5 }).length === 0 &&
+                        isCheckedKing(boardState, currentTeam, { row: 7, box: 6 }).length === 0) {
+                        possibleMoves = [...possibleMoves, { row: 7, box: 6 }]
+                    }
+                    if (allowedWhiteCastling.queenSide && !boardState[7][1] && !boardState[7][2] && !boardState[7][3] &&
+                        isCheckedKing(boardState, currentTeam, { row: 7, box: 2 }).length === 0 &&
+                        isCheckedKing(boardState, currentTeam, { row: 7, box: 3 }).length === 0) {
+                        possibleMoves = [...possibleMoves, { row: 7, box: 2 }]
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+        }
+        if (isKingChecked) {
+            possibleMoves = possibleMoves.filter(possibleMove => {
+                return checkPieceMovePreventKingCheck(boardState, currentTeam, box, possibleMove, isKingChecked, lastMove)
+            })
+        }
+        return possibleMoves
+    }
+
+    React.useEffect(() => {
         if (boardState) {
             if (!clickedBox)
                 return setPieceSuggestions([]);
 
-            let possibleMoves = []
-            switch (clickedBox.piece.piece) {
-                case 'pawn': {
-                    possibleMoves = getPawnMoves(boardState, clickedBox, currentTeam, lastMove)
-                    break;
-                }
-                case 'bishop': {
-                    possibleMoves = getBishopMoves(boardState, clickedBox, currentTeam)
-                    break;
-                }
-                case 'queen': {
-
-                    possibleMoves = [...getBishopMoves(boardState, clickedBox, currentTeam), ...getRockMoves(boardState, clickedBox, currentTeam)]
-                    break;
-                }
-                case 'rock': {
-                    possibleMoves = getRockMoves(boardState, clickedBox, currentTeam)
-                    break;
-                }
-                case 'knight': {
-                    possibleMoves = getKnightMoves(boardState, clickedBox, currentTeam)
-
-                    break;
-                }
-                case 'king': {
-                    possibleMoves = getKingMoves(boardState, clickedBox, currentTeam)
-                    if (currentTeam === 'black') {
-                        if (allowedBlackCastling.kingSide && !boardState[0][5] && !boardState[0][6]) {
-                            possibleMoves = [...possibleMoves, { row: 0, box: 6 }]
-                        }
-                        if (allowedBlackCastling.queenSide && !boardState[0][1] && !boardState[0][2] && !boardState[0][3]) {
-                            possibleMoves = [...possibleMoves, { row: 0, box: 2 }]
-                        }
-
-                    } else {
-                        if (allowedWhiteCastling.kingSide && !boardState[7][5] && !boardState[7][6]) {
-                            possibleMoves = [...possibleMoves, { row: 7, box: 6 }]
-                        }
-                        if (allowedWhiteCastling.queenSide && !boardState[7][1] && !boardState[7][2] && !boardState[7][3]) {
-                            possibleMoves = [...possibleMoves, { row: 7, box: 2 }]
-                        }
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-            if (isKingChecked) {
-                possibleMoves = possibleMoves.filter(possibleMove => {
-                    return checkPieceMovePreventKingCheck(boardState, currentTeam, clickedBox, possibleMove, isKingChecked, lastMove)
-                })
-            }
+            const possibleMoves = getPiecePossibleMoves(clickedBox)
             setPieceSuggestions([...possibleMoves])
         }
         // eslint-disable-next-line
@@ -767,19 +196,41 @@ const GamePage = () => {
     }, [boardState])
 
     React.useEffect(() => {
-        console.log(eatedPieces)
 
-    }, [eatedPieces])
+        if (!boardState)
+            return
+        let foundMove = false
 
-    React.useEffect(() => {
-        if (isKingChecked) {
-            const currentPos = { row: isKingChecked.row, box: isKingChecked.box }
-            if (getKingMoves(boardState, currentPos, currentTeam).length === 0) {
-                console.log(`${currentTeam} has lost`)
+        let i = 0
+        let j = 0
+
+        while (!foundMove && i <= 7) {
+            j = 0
+            while (!foundMove && j <= 7) {
+                if (!boardState[i][j] || boardState[i][j].team !== currentTeam)
+                    j++
+                else {
+                    const possibleMoves = getPiecePossibleMoves({ piece: boardState[i][j], row: i, box: j })
+                    if (possibleMoves.length > 0) {
+                        foundMove = true
+                    }
+                    j++
+
+                }
+            }
+            i++
+        }
+        if (foundMove) {
+            return
+        } else {
+            if (isKingChecked) {
+                console.log('you lost')
+            } else {
+                console.log('draw')
             }
         }
         // eslint-disable-next-line
-    }, [isKingChecked])
+    }, [isKingChecked, boardState, currentTeam])
 
     const getColorBox = (rowIndex, boxIndex) => {
 
@@ -796,6 +247,8 @@ const GamePage = () => {
     }
 
     const clickedPieceHandler = (row, box) => {
+        if (currentBoardIndex !== previsousBoards.length - 1)
+            return
         if (isKingChecked && isKingChecked.team === currentTeam) {
             if (!clickedBox) {
                 if (boardState[row][box]) {
@@ -900,6 +353,19 @@ const GamePage = () => {
 
                         }
                     }
+                    console.log(clickedBox)
+
+                    if (currentTeam === 'black') {
+                        console.log(clickedBox)
+                        if (row === 7) {
+                            console.log('promote')
+                        }
+                    }
+                    else {
+                        if (row === 0) {
+                            console.log('promote')
+                        }
+                    }
                 }
 
                 if (boardState[row][box]) {
@@ -930,44 +396,63 @@ const GamePage = () => {
         return (isKingChecked.row === row && isKingChecked.box === box)
     }
 
+    const checkPositionIncludedInSuggestions = (rowIndex, boxIndex) => {
+        let result = false
+        let i = 0
+        while (!result && i < pieceSuggestions.length) {
+            if (pieceSuggestions[i].row === rowIndex && pieceSuggestions[i].box === boxIndex)
+                result = true
+
+            i++
+        }
+        return result
+    }
 
     const isValidNextGame = (rowIndex, boxIndex) => {
-        let result = false
-        pieceSuggestions.forEach(suggestion => {
-            if (suggestion.row === rowIndex && suggestion.box === boxIndex)
-                result = true
-        })
+        return checkPositionIncludedInSuggestions(rowIndex, boxIndex) && checkNoKingCheckNextMove(rowIndex, boxIndex)
+    }
 
-        if (clickedBox) {
+    const checkNoKingCheckNextMove = (rowIndex, boxIndex) => {
 
-            if (clickedBox.piece.piece === 'king')
-                return result
-            let kingPosition
-            const boardCopy = JSON.parse(JSON.stringify(boardState))
-            boardState.forEach((row, rowIndex) => {
-                row.forEach((box, boxIndex) => {
-                    if (box && box.piece === 'king' && box.team === currentTeam) {
-                        kingPosition = { row: rowIndex, box: boxIndex }
-                    }
-                })
-            })
-            if (kingPosition) {
-                boardCopy[clickedBox.row][clickedBox.box] = null;
-                boardCopy[rowIndex][boxIndex] = clickedBox.piece
-                if (isCheckedKing(boardCopy, currentTeam, kingPosition).length > 0)
-                    return false
-
-            }
+        if (!clickedBox) {
+            return true
         }
-
-        return result
+        if (clickedBox.piece.piece === 'king')
+            return true
+        let kingPosition
+        const boardCopy = JSON.parse(JSON.stringify(boardState))
+        boardState.forEach((row, rowIndex) => {
+            row.forEach((box, boxIndex) => {
+                if (box && box.piece === 'king' && box.team === currentTeam) {
+                    kingPosition = { row: rowIndex, box: boxIndex }
+                }
+            })
+        })
+        boardCopy[clickedBox.row][clickedBox.box] = null;
+        boardCopy[rowIndex][boxIndex] = clickedBox.piece
+        if (isCheckedKing(boardCopy, currentTeam, kingPosition).length > 0)
+            return false
+        return true
     }
     const checkIsLastMove = (row, box) => {
         if (!lastMove)
             return false
         return (lastMove.from.row === row && lastMove.from.box === box) || (lastMove.to.row === row && lastMove.to.box === box)
     }
-    if (!boardState)
+
+    const setDisplayedBoardHandler = (sign) => {
+
+        if (sign === '+') {
+            if (currentBoardIndex < previsousBoards.length - 1)
+                setCurrentBoardIndex(currentBoardIndex + 1)
+
+        } else {
+            if (currentBoardIndex > 0)
+                setCurrentBoardIndex(currentBoardIndex - 1)
+
+        }
+    }
+    if (!displayedBoard)
         return null
     return (
         <Container fluid className={classes.mainContainer}>
@@ -979,18 +464,19 @@ const GamePage = () => {
                 </Col>
                 <Col className={classes.boardContainer}>
                     <div>
-                        {boardState.map((row, rowIndex) => (
+                        {displayedBoard.map((row, rowIndex) => (
                             <div key={rowIndex} className={classes.boardRow}>
                                 {row.map((box, boxIndex) => (
                                     <div key={boxIndex} onClick={() => clickedPieceHandler(rowIndex, boxIndex)}
 
                                         style={{ backgroundColor: checkCheckedKing(rowIndex, boxIndex) ? '#ad0000' : checkClickedPiece(rowIndex, boxIndex) ? '#B1833E' : checkIsLastMove(rowIndex, boxIndex) ? '#b38b51' : `${getColorBox(rowIndex, boxIndex)}` }}
                                         className={classes.boxContainer}>
-                                        {clickedBox && isValidNextGame(rowIndex, boxIndex) && isFreeBox(box, currentTeam) === "eat" ? <div className={classes.eatMoveBox}></div>
-                                            :
-                                            clickedBox && isValidNextGame(rowIndex, boxIndex) && <div className={classes.possibleMoveBox}></div>
-
-                                        }
+                                        {clickedBox && isValidNextGame(rowIndex, boxIndex) && <React.Fragment>
+                                            {isFreeBox(box, currentTeam) === "eat" ? <div className={classes.eatMoveBox}></div>
+                                                :
+                                                <div className={classes.possibleMoveBox}></div>
+                                            }
+                                        </React.Fragment>}
                                         {box && <div className={classes.pieceImg} style={{ backgroundImage: `url(${box.img})` }} />}
 
                                     </div>
@@ -1004,6 +490,12 @@ const GamePage = () => {
                     {eatedPieces.filter(eatedPiece => eatedPiece.team === 'black').map((piece, key) => {
                         return <div className={classes.pieceImg} key={key} style={{ backgroundImage: `url(${piece.img})`, height: '50px', width: '50px' }} />
                     })}
+                </Col>
+            </Row>
+            <Row>
+                <Col>
+                    <button onClick={() => { setDisplayedBoardHandler('+') }}>+</button>
+                    <button onClick={() => { setDisplayedBoardHandler('-') }}>-</button>
                 </Col>
             </Row>
         </Container>
