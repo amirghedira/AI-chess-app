@@ -58,8 +58,18 @@ const GamePage = () => {
     const [currentBoardIndex, setCurrentBoardIndex] = React.useState(0)
 
     React.useEffect(() => {
+        // const _boardState = [
+        //     [BLACK_ROCK, BLACK_KNIGHT, BLACK_BIPHOP, BLACK_QUEEN, BLACK_KING, BLACK_BIPHOP, BLACK_KNIGHT, BLACK_ROCK],
+        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => BLACK_PAWN),
+        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
+        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
+        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
+        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
+        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => WHITE_PAWN),
+        //     [WHITE_ROCK, WHITE_KNIGHT, WHITE_BIPHOP, WHITE_QUEEN, WHITE_KING, WHITE_BIPHOP, WHITE_KNIGHT, WHITE_ROCK],
+        // ]
         const _boardState = [
-            [BLACK_ROCK, BLACK_KNIGHT, BLACK_BIPHOP, BLACK_QUEEN, BLACK_KING, BLACK_BIPHOP, BLACK_KNIGHT, BLACK_ROCK],
+            [null, null, null, null, BLACK_KING, null, null, null],
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => BLACK_PAWN),
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
