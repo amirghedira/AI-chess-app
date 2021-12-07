@@ -13,33 +13,21 @@ import {
     getPassedPawn,
     isFreeBox
 } from '../../utils/GameFunctions'
-import whitePawnPieceImg from '../../assets/pieces/white_pawn.png'
-import blackPawnPieceImg from '../../assets/pieces/black_pawn.png'
-import blackRockPieceImg from '../../assets/pieces/black_rock.png'
-import whiteRockPieceImg from '../../assets/pieces/white_rock.png'
-import whiteKingPieceImg from '../../assets/pieces/white_king.png'
-import blackKingPieceImg from '../../assets/pieces/black_king.png'
-import blackbishopPieceImg from '../../assets/pieces/black_bishop.png'
-import whitebishopPieceImg from '../../assets/pieces/white_bishop.png'
-import whiteknightPieceImg from '../../assets/pieces/white_knight.png'
-import blackknightPieceImg from '../../assets/pieces/black_knight.png'
-import blackQueenPieceImg from '../../assets/pieces/black_queen.png'
-
-import whiteQueenPieceImg from '../../assets/pieces/white_queen.png'
-
-const WHITE_PAWN = { piece: 'pawn', team: 'white', value: '1', img: whitePawnPieceImg }
-const WHITE_ROCK = { piece: 'rock', team: 'white', value: '5', img: whiteRockPieceImg }
-const WHITE_QUEEN = { piece: 'queen', team: 'white', value: '9', img: whiteQueenPieceImg }
-const WHITE_KNIGHT = { piece: 'knight', team: 'white', value: '3', img: whiteknightPieceImg }
-const WHITE_KING = { piece: 'king', team: 'white', value: '0', img: whiteKingPieceImg }
-const WHITE_BIPHOP = { piece: 'bishop', team: 'white', value: '9', img: whitebishopPieceImg }
-
-const BLACK_PAWN = { piece: 'pawn', team: 'black', value: '1', img: blackPawnPieceImg }
-const BLACK_ROCK = { piece: 'rock', team: 'black', value: '5', img: blackRockPieceImg }
-const BLACK_QUEEN = { piece: 'queen', team: 'black', value: '9', img: blackQueenPieceImg }
-const BLACK_KNIGHT = { piece: 'knight', team: 'black', value: '3', img: blackknightPieceImg }
-const BLACK_KING = { piece: 'king', team: 'black', value: '0', img: blackKingPieceImg }
-const BLACK_BIPHOP = { piece: 'bishop', team: 'black', value: '9', img: blackbishopPieceImg }
+import EndGameModal from './EndGameModal/EndGameModal'
+import {
+    WHITE_BIPHOP,
+    WHITE_KING,
+    WHITE_KNIGHT,
+    WHITE_QUEEN,
+    WHITE_ROCK, WHITE_PAWN,
+    BLACK_BIPHOP,
+    BLACK_KING,
+    BLACK_KNIGHT,
+    BLACK_PAWN,
+    BLACK_QUEEN,
+    BLACK_ROCK
+} from '../../utils/Pieces'
+import PromotePieceModal from './PromotePieceModal/PromotePieceModal'
 
 
 const GamePage = () => {
@@ -56,20 +44,14 @@ const GamePage = () => {
     const [eatedPieces, setEatedPieces] = React.useState([])
     const [previsousBoards, setPreviousBoards] = React.useState([])
     const [currentBoardIndex, setCurrentBoardIndex] = React.useState(0)
-
+    const [isGameEnded, setIsGameEnded] = React.useState(false)
+    const [endGameInfoModal, setEndGameInfoModal] = React.useState({ isOpen: false })
+    const [promotePieceModal, setPromotePieceModal] = React.useState({ isOpen: false })
+    const [timer, setTimer] = React.useState({ black: '0:30', white: '0:30' })
+    const timerInterval = React.useRef(null)
     React.useEffect(() => {
-        // const _boardState = [
-        //     [BLACK_ROCK, BLACK_KNIGHT, BLACK_BIPHOP, BLACK_QUEEN, BLACK_KING, BLACK_BIPHOP, BLACK_KNIGHT, BLACK_ROCK],
-        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => BLACK_PAWN),
-        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
-        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
-        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
-        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
-        //     [1, 2, 3, 4, 5, 6, 7, 8].map(i => WHITE_PAWN),
-        //     [WHITE_ROCK, WHITE_KNIGHT, WHITE_BIPHOP, WHITE_QUEEN, WHITE_KING, WHITE_BIPHOP, WHITE_KNIGHT, WHITE_ROCK],
-        // ]
         const _boardState = [
-            [null, null, null, null, BLACK_KING, null, null, null],
+            [BLACK_ROCK, BLACK_KNIGHT, BLACK_BIPHOP, BLACK_QUEEN, BLACK_KING, BLACK_BIPHOP, BLACK_KNIGHT, BLACK_ROCK],
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => BLACK_PAWN),
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
@@ -81,7 +63,6 @@ const GamePage = () => {
         setEatedPieces([])
         setAllowedBlackCastling({ kingSide: true, queenSide: true })
         setAllowedWhiteCastling({ kingSide: true, queenSide: true })
-
         setBoardState(_boardState)
         setIsKingChecked(null)
         setLastMove(null)
@@ -104,7 +85,31 @@ const GamePage = () => {
         setDisplayedBoard(previsousBoards[currentBoardIndex])
     }, [currentBoardIndex, previsousBoards])
 
+    React.useEffect(() => {
+        let duration = +timer[currentTeam].split(':')[0] * 60 + +timer[currentTeam].split(':')[1]
+        var time = duration, minutes, seconds;
+        if (timerInterval.current)
+            clearInterval(timerInterval.current)
+        timerInterval.current = setInterval(function () {
+            minutes = parseInt(time / 60, 10);
+            seconds = parseInt(time % 60, 10);
 
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+            setTimer({ ...timer, [currentTeam]: minutes + ":" + seconds })
+            if (--time < 0) {
+                clearInterval(timerInterval.current)
+                let wonTeam = currentTeam === 'white' ? 'Black' : 'White'
+                setEndGameInfoModal({
+                    isOpen: true,
+                    title: `${wonTeam} won`,
+                    description: `${wonTeam} won by time`
+                })
+                setIsGameEnded(true)
+            }
+        }, 1000);
+        // eslint-disable-next-line
+    }, [currentTeam])
     const getPiecePossibleMoves = (box) => {
         let possibleMoves = []
 
@@ -209,10 +214,80 @@ const GamePage = () => {
 
         if (!boardState)
             return
-        let foundMove = false
-
+        let foundPawn = false
+        let foundRock = false
+        let foundQueen = false
         let i = 0
         let j = 0
+
+        while (!(foundPawn || foundRock || foundQueen) && i <= 7) {
+            j = 0
+            while (!(foundPawn || foundRock || foundQueen) && j <= 7) {
+                if (boardState[i][j]) {
+                    if (boardState[i][j].piece === 'pawn') {
+                        foundPawn = true
+
+                    }
+                    if (boardState[i][j].piece === 'queen') {
+                        foundQueen = true
+                    }
+                    if (boardState[i][j].piece === 'rock') {
+                        foundRock = true
+                    }
+                }
+                j++
+
+            }
+            i++
+
+        }
+        if (!foundPawn && !foundRock && !foundQueen) {
+            i = 0
+            j = 0
+            let countWhiteBishop = 0
+            let countBlackBishop = 0
+            let countWhiteKnight = 0
+            let countBlackKnight = 0
+            while (i <= 7) {
+                j = 0
+                while (j <= 7) {
+                    if (boardState[i][j]) {
+                        if (boardState[i][j].piece === 'bishop') {
+                            if (boardState[i][j].team === 'white') {
+                                countWhiteBishop++
+                            } else {
+                                countBlackBishop++
+                            }
+
+                        }
+                        if (boardState[i][j].piece === 'knight') {
+                            if (boardState[i][j].team === 'white') {
+                                countWhiteKnight++
+                            } else {
+                                countBlackKnight++
+                            }
+                        }
+                    }
+                    j++
+
+                }
+                i++
+
+            }
+            if (countBlackKnight + countWhiteBishop + countWhiteKnight + countBlackBishop <= 2) {
+                setIsGameEnded(true)
+                return setEndGameInfoModal({
+                    isOpen: true,
+                    title: 'Draw !',
+                    description: 'Insufficient mating material'
+                })
+            }
+
+        }
+        let foundMove = false
+
+        i = 0
+        j = 0
 
         while (!foundMove && i <= 7) {
             j = 0
@@ -234,10 +309,26 @@ const GamePage = () => {
             return
         } else {
             if (isKingChecked) {
-                console.log('you lost')
+                let wonTeam = ''
+                if (currentTeam === 'white') {
+                    wonTeam = 'Black'
+                } else {
+                    wonTeam = 'White'
+
+                }
+                setEndGameInfoModal({
+                    isOpen: true,
+                    title: `${wonTeam} won`,
+                    description: `${wonTeam} won by checkmate`
+                })
             } else {
-                console.log('draw')
+                setEndGameInfoModal({
+                    isOpen: true,
+                    title: 'Draw !',
+                    description: 'Game drawn by stalemate'
+                })
             }
+            setIsGameEnded(true)
         }
         // eslint-disable-next-line
     }, [isKingChecked, boardState, currentTeam])
@@ -257,6 +348,8 @@ const GamePage = () => {
     }
 
     const clickedPieceHandler = (row, box) => {
+        if (isGameEnded)
+            return
         if (currentBoardIndex !== previsousBoards.length - 1)
             return
         if (isKingChecked && isKingChecked.team === currentTeam) {
@@ -273,39 +366,9 @@ const GamePage = () => {
         }
         if (!(boardState[row][box]) || boardState[row][box].team !== currentTeam) {
             if (isValidNextGame(row, box)) {
-                setCurrentTeam((team) => {
-                    if (team === 'white') {
-                        if (clickedBox.piece.piece === 'rock') {
-                            if (clickedBox.box === 0) {
-                                setAllowedWhiteCastling({ ...allowedWhiteCastling, queenSide: false })
-
-                            } else {
-                                setAllowedWhiteCastling({ ...allowedWhiteCastling, kingSide: false })
-
-                            }
-                        }
-                        if (clickedBox.piece.piece === 'king' && allowedWhiteCastling)
-                            setAllowedWhiteCastling({ kingSide: false, queenSide: false })
-                        return 'black'
-                    }
-                    if (clickedBox.piece.piece === 'king' && allowedBlackCastling)
-                        setAllowedBlackCastling({ kingSide: false, queenSide: false })
-                    if (clickedBox.piece.piece === 'rock') {
-                        if (clickedBox.box === 0) {
-                            setAllowedBlackCastling({ ...allowedBlackCastling, queenSide: false })
-
-                        } else {
-                            setAllowedBlackCastling({ ...allowedBlackCastling, kingSide: false })
-
-                        }
-                    }
-
-                    return 'white'
-                })
-                setLastMove({ from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece })
                 if (isKingChecked)
                     setIsKingChecked(null)
-                const _boardState = [...boardState];
+                const _boardState = JSON.parse(JSON.stringify(boardState));
                 _boardState[clickedBox.row][clickedBox.box] = null;
                 if (clickedBox.piece.piece === 'king') {
                     if (currentTeam === 'black') {
@@ -363,18 +426,17 @@ const GamePage = () => {
 
                         }
                     }
-                    console.log(clickedBox)
 
-                    if (currentTeam === 'black') {
-                        console.log(clickedBox)
-                        if (row === 7) {
-                            console.log('promote')
-                        }
-                    }
-                    else {
-                        if (row === 0) {
-                            console.log('promote')
-                        }
+                    if ((currentTeam === 'black' && row === 7) || (currentTeam === 'white' && row === 0)) {
+
+                        setPromotePieceModal({
+                            isOpen: true,
+                            position: { row, box }
+                        })
+                        setPieceSuggestions([])
+                        setClickedBox(null)
+                        return
+
                     }
                 }
 
@@ -384,6 +446,36 @@ const GamePage = () => {
                 _boardState[row][box] = clickedBox.piece
 
                 setBoardState([..._boardState])
+                setCurrentTeam((team) => {
+                    if (team === 'white') {
+                        if (clickedBox.piece.piece === 'rock') {
+                            if (clickedBox.box === 0) {
+                                setAllowedWhiteCastling({ ...allowedWhiteCastling, queenSide: false })
+
+                            } else {
+                                setAllowedWhiteCastling({ ...allowedWhiteCastling, kingSide: false })
+
+                            }
+                        }
+                        if (clickedBox.piece.piece === 'king' && allowedWhiteCastling)
+                            setAllowedWhiteCastling({ kingSide: false, queenSide: false })
+                        return 'black'
+                    }
+                    if (clickedBox.piece.piece === 'king' && allowedBlackCastling)
+                        setAllowedBlackCastling({ kingSide: false, queenSide: false })
+                    if (clickedBox.piece.piece === 'rock') {
+                        if (clickedBox.box === 0) {
+                            setAllowedBlackCastling({ ...allowedBlackCastling, queenSide: false })
+
+                        } else {
+                            setAllowedBlackCastling({ ...allowedBlackCastling, kingSide: false })
+
+                        }
+                    }
+                    clearInterval(timerInterval.current)
+                    return 'white'
+                })
+                setLastMove({ from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece })
             }
             setPieceSuggestions([])
             setClickedBox(null)
@@ -462,50 +554,107 @@ const GamePage = () => {
 
         }
     }
+    const choosePromotedPieceHandler = (piece) => {
+        const _boardState = [...boardState]
+        let oponentTeam = ''
+        if (currentTeam === 'black') {
+            oponentTeam = 'white'
+            _boardState[promotePieceModal.position.row - 1][promotePieceModal.position.box] = null
+
+        } else {
+            oponentTeam = 'black'
+            _boardState[promotePieceModal.position.row + 1][promotePieceModal.position.box] = null
+
+        }
+        _boardState[promotePieceModal.position.row][promotePieceModal.position.box] = piece
+        setBoardState([..._boardState])
+        setPromotePieceModal({ isOpen: false })
+        setCurrentTeam(oponentTeam)
+    }
     if (!displayedBoard)
         return null
     return (
         <Container fluid className={classes.mainContainer}>
-            <Row style={{ height: '100%', alignItems: 'center', display: 'flex' }}>
-                <Col xs="1">
-                    {eatedPieces.filter(eatedPiece => eatedPiece.team === 'white').map((piece, key) => {
-                        return <div className={classes.pieceImg} key={key} style={{ backgroundImage: `url(${piece.img})`, height: '50px', width: '50px' }} />
-                    })}
-                </Col>
-                <Col className={classes.boardContainer}>
-                    <div>
-                        {displayedBoard.map((row, rowIndex) => (
-                            <div key={rowIndex} className={classes.boardRow}>
-                                {row.map((box, boxIndex) => (
-                                    <div key={boxIndex} onClick={() => clickedPieceHandler(rowIndex, boxIndex)}
+            <EndGameModal
+                isOpen={endGameInfoModal.isOpen} toggle={() => { setEndGameInfoModal({ ...endGameInfoModal, isOpen: false }) }}
+                title={endGameInfoModal.title} description={endGameInfoModal.description} />
+            <PromotePieceModal isOpen={promotePieceModal.isOpen}
+                toggle={() => setPromotePieceModal({ isOpen: false })}
+                team={currentTeam}
+                choosePromotedPiece={choosePromotedPieceHandler} />
+            <Row style={{ height: '100%', alignItems: 'center', justifyContent: 'center', display: 'flex' }}>
+                <Col xs="8">
+                    <Row className={classes.mainUserInfoContainer}>
+                        <Col style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex' }}>
+                                <div className={classes.imageContainer}>
+                                    <img className={classes.userImage} alt="user" src={'https://raw.githubusercontent.com/Ashwinvalento/cartoon-avatar/master/lib/images/male/45.png'} />
+                                </div>
+                                <div className={classes.userInfoContainer}>
+                                    <h5 className={classes.userNameText}>Amir ghedira (900)</h5>
+                                    <div style={{ display: 'flex' }}>
+                                        {eatedPieces.filter(eatedPiece => eatedPiece.team === 'black').map((piece, key) => {
+                                            return <div className={classes.pieceImgEated} key={key} style={{ backgroundImage: `url(${piece.img})` }} />
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={classes.timerContainer} style={{ backgroundColor: currentTeam === 'black' ? 'rgb(150,150,150)' : 'rgb(20,10,20)' }}>
+                                <h5 className={classes.timerText} style={{ color: currentTeam === 'black' ? 'black' : 'white' }}>{timer.black}</h5>
+                            </div>
 
-                                        style={{ backgroundColor: checkCheckedKing(rowIndex, boxIndex) ? '#ad0000' : checkClickedPiece(rowIndex, boxIndex) ? '#B1833E' : checkIsLastMove(rowIndex, boxIndex) ? '#b38b51' : `${getColorBox(rowIndex, boxIndex)}` }}
-                                        className={classes.boxContainer}>
-                                        {clickedBox && isValidNextGame(rowIndex, boxIndex) && <React.Fragment>
-                                            {isFreeBox(box, currentTeam) === "eat" ? <div className={classes.eatMoveBox}></div>
-                                                :
-                                                <div className={classes.possibleMoveBox}></div>
-                                            }
-                                        </React.Fragment>}
-                                        {box && <div className={classes.pieceImg} style={{ backgroundImage: `url(${box.img})` }} />}
+                        </Col>
+                    </Row>
+                    <Row>
+                        <Col style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div>
+                                {displayedBoard.map((row, rowIndex) => (
+                                    <div key={rowIndex} className={classes.boardRow}>
+                                        {row.map((box, boxIndex) => (
+                                            <div key={boxIndex} onClick={() => clickedPieceHandler(rowIndex, boxIndex)}
 
+                                                style={{ backgroundColor: checkCheckedKing(rowIndex, boxIndex) ? '#ad0000' : checkClickedPiece(rowIndex, boxIndex) ? '#B1833E' : checkIsLastMove(rowIndex, boxIndex) ? '#b38b51' : `${getColorBox(rowIndex, boxIndex)}` }}
+                                                className={classes.boxContainer}>
+                                                {clickedBox && isValidNextGame(rowIndex, boxIndex) && <React.Fragment>
+                                                    {isFreeBox(box, currentTeam) === "eat" ? <div className={classes.eatMoveBox}></div>
+                                                        :
+                                                        <div className={classes.possibleMoveBox}></div>
+                                                    }
+                                                </React.Fragment>}
+                                                {box && <div className={classes.pieceImg} style={{ backgroundImage: `url(${box.img})` }} />}
+
+                                            </div>
+                                        ))}
                                     </div>
                                 ))}
-
                             </div>
-                        ))}
-                    </div>
-                </Col>
-                <Col xs="1">
-                    {eatedPieces.filter(eatedPiece => eatedPiece.team === 'black').map((piece, key) => {
-                        return <div className={classes.pieceImg} key={key} style={{ backgroundImage: `url(${piece.img})`, height: '50px', width: '50px' }} />
-                    })}
-                </Col>
-            </Row>
-            <Row>
-                <Col>
-                    <button onClick={() => { setDisplayedBoardHandler('+') }}>+</button>
-                    <button onClick={() => { setDisplayedBoardHandler('-') }}>-</button>
+                        </Col>
+                    </Row>
+                    <Row className={classes.mainUserInfoContainer}>
+                        <Col style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex' }}>
+                                <div className={classes.imageContainer}>
+                                    <img className={classes.userImage} alt="user" src={'https://raw.githubusercontent.com/Ashwinvalento/cartoon-avatar/master/lib/images/male/22.png'} />
+                                </div>
+                                <div className={classes.userInfoContainer}>
+                                    <h5 className={classes.userNameText}>Amir ghedira (900)</h5>
+                                    <div style={{ display: 'flex' }}>
+                                        {eatedPieces.filter(eatedPiece => eatedPiece.team === 'white').map((piece, key) => {
+                                            return <div className={classes.pieceImgEated} key={key} style={{ backgroundImage: `url(${piece.img})` }} />
+                                        })}
+                                    </div>
+                                </div>
+                                <div style={{ marginLeft: '10px' }}>
+                                    <i className={'fas fa-chevron-left'} style={{ cursor: 'pointer', fontSize: '20px', color: 'white', marginLeft: '5px', marginRight: '5px' }} onClick={() => { setDisplayedBoardHandler('+') }}></i>
+                                    <i className={'fas fa-chevron-right'} style={{ cursor: 'pointer', fontSize: '20px', color: 'white', marginLeft: '5px', marginRight: '5px' }} onClick={() => { setDisplayedBoardHandler('-') }}></i>
+                                </div>
+                            </div>
+                            <div className={classes.timerContainer} style={{ backgroundColor: currentTeam === 'white' ? 'rgb(150,150,150)' : 'rgb(20,10,20)' }}>
+                                <h5 className={classes.timerText} style={{ color: currentTeam === 'white' ? 'black' : 'white' }}>{timer.white}</h5>
+                            </div>
+
+                        </Col>
+                    </Row>
                 </Col>
             </Row>
         </Container>

@@ -409,10 +409,12 @@ const getKingPossibleMoves = (board, currentPos, team) => {
 }
 
 
-const getKingMoves = (board, currentPos, team) => {
+const getKingMoves = (board, currentPos, team, checkAllowedMoved = true) => {
 
 
     let possibleMoves = getKingPossibleMoves(board, currentPos, team)
+    if (!checkAllowedMoved)
+        return possibleMoves
     let kingAllowedMoves = []
     possibleMoves.forEach(possibleMove => {
         if (isCheckedKing(board, team, possibleMove).length === 0)
@@ -707,6 +709,16 @@ const isCheckedKing = (board, team, kingPosition) => {
     const oponentTeam = team === 'white' ? 'black' : 'white'
 
     const piecesCheckingPosition = []
+
+
+    const possibleKingMoves = getKingMoves(board, kingPosition, team, false)
+    possibleKingMoves.forEach(pos => {
+        if (board[pos.row][pos.box]?.piece === 'king' && board[pos.row][pos.box]?.team === oponentTeam) {
+            piecesCheckingPosition.push({ ...board[pos.row][pos.box], ...pos })
+        }
+    })
+
+
     const possibleKnightMoves = getKnightMoves(board, kingPosition, team)
     possibleKnightMoves.forEach(pos => {
         if (board[pos.row][pos.box]?.piece === 'knight' && board[pos.row][pos.box]?.team === oponentTeam) {

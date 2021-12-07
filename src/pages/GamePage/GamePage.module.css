@@ -1,6 +1,6 @@
 .mainContainer {
     height: 100vh;
-    background-color: rgb(201, 201, 201);
+    background-color: rgb(50, 50, 50);
 }
 
 .boardContainer {
@@ -53,10 +53,61 @@
     background-color: #7F5531;
 }
 
+.pieceImgEated {
+    height: 20px;
+    width: 20px;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
 .pieceImg {
     height: 70px;
     width: 70px;
     background-position: 50% 50%;
     background-repeat: no-repeat;
     background-size: cover;
+}
+
+.userImage {
+    height: 40px;
+    width: 40px;
+}
+
+.imageContainer {
+
+    margin-right: 10px;
+}
+
+.userInfoContainer {}
+
+.userNameText {
+    font-size: 14px;
+    color: white;
+    margin: 0;
+    font-weight: 500;
+
+}
+
+.timerContainer {
+    background-color: rgb(100, 100, 100);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    width: 100px;
+
+}
+
+.timerText {
+    margin: 0;
+    font-size: 25px;
+    color: black;
+    font-weight: 600;
+}
+
+.mainUserInfoContainer {
+    margin-bottom: 10px;
+    margin-top: 10px !important;
 }
