@@ -47,7 +47,7 @@ const GamePage = () => {
     const [isGameEnded, setIsGameEnded] = React.useState(false)
     const [endGameInfoModal, setEndGameInfoModal] = React.useState({ isOpen: false })
     const [promotePieceModal, setPromotePieceModal] = React.useState({ isOpen: false })
-    const [timer, setTimer] = React.useState({ black: '0:30', white: '0:30' })
+    const [timer, setTimer] = React.useState({ black: '05:30', white: '05:30' })
     const timerInterval = React.useRef(null)
     React.useEffect(() => {
         const _boardState = [
@@ -86,14 +86,30 @@ const GamePage = () => {
     }, [currentBoardIndex, previsousBoards])
 
     React.useEffect(() => {
-        let duration = +timer[currentTeam].split(':')[0] * 60 + +timer[currentTeam].split(':')[1]
+        let duration = (+timer[currentTeam].split(':')[0] * 60 + +timer[currentTeam].split(':')[1])
         var time = duration, minutes, seconds;
         if (timerInterval.current)
             clearInterval(timerInterval.current)
+
+        minutes = parseInt(time / 60, 10);
+        seconds = parseInt(time % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+        setTimer({ ...timer, [currentTeam]: minutes + ":" + seconds })
+        if (--time < 0) {
+            clearInterval(timerInterval.current)
+            let wonTeam = currentTeam === 'white' ? 'Black' : 'White'
+            setEndGameInfoModal({
+                isOpen: true,
+                title: `${wonTeam} won`,
+                description: `${wonTeam} won by time`
+            })
+            setIsGameEnded(true)
+        }
         timerInterval.current = setInterval(function () {
             minutes = parseInt(time / 60, 10);
             seconds = parseInt(time % 60, 10);
-
             minutes = minutes < 10 ? "0" + minutes : minutes;
             seconds = seconds < 10 ? "0" + seconds : seconds;
             setTimer({ ...timer, [currentTeam]: minutes + ":" + seconds })
