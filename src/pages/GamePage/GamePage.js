@@ -396,6 +396,7 @@ const GamePage = () => {
                             setBoardState([..._boardState])
                             setPieceSuggestions([])
                             setClickedBox(null)
+                            setCurrentTeam('white')
                             return
 
                         } else if (row === 0 && box === 6 && allowedBlackCastling.kingSide) {
@@ -405,6 +406,7 @@ const GamePage = () => {
                             setBoardState([..._boardState])
                             setPieceSuggestions([])
                             setClickedBox(null)
+                            setCurrentTeam('white')
                             return
                         }
 
@@ -417,6 +419,8 @@ const GamePage = () => {
                             setBoardState([..._boardState])
                             setPieceSuggestions([])
                             setClickedBox(null)
+                            setCurrentTeam('black')
+
                             return
                         } else if (row === 7 && box === 6 && allowedWhiteCastling.kingSide) {
 
@@ -426,6 +430,8 @@ const GamePage = () => {
                             setBoardState([..._boardState])
                             setPieceSuggestions([])
                             setClickedBox(null)
+                            setCurrentTeam('black')
+
                             return
                         }
                     }
@@ -587,6 +593,14 @@ const GamePage = () => {
         setPromotePieceModal({ isOpen: false })
         setCurrentTeam(oponentTeam)
     }
+
+    const getScoreTeam = (team) => {
+        eatedPieces.filter(eatedPiece => eatedPiece.team === 'white')
+            .map(piece => +piece.value)
+            .reduce((prevV, currentV) => {
+                return prevV + currentV
+            }, 0)
+    }
     if (!displayedBoard)
         return null
     return (
@@ -612,6 +626,9 @@ const GamePage = () => {
                                         {eatedPieces.filter(eatedPiece => eatedPiece.team === 'black').map((piece, key) => {
                                             return <div className={classes.pieceImgEated} key={key} style={{ backgroundImage: `url(${piece.img})` }} />
                                         })}
+                                        <h5 style={{ fontSize: '12px', color: 'rgb(110,110,110)' }}>{
+                                            getScoreTeam('black')
+                                        }</h5>
                                     </div>
                                 </div>
                             </div>
@@ -658,7 +675,11 @@ const GamePage = () => {
                                         {eatedPieces.filter(eatedPiece => eatedPiece.team === 'white').map((piece, key) => {
                                             return <div className={classes.pieceImgEated} key={key} style={{ backgroundImage: `url(${piece.img})` }} />
                                         })}
+                                        <h5 style={{ fontSize: '12px', color: 'rgb(110,110,110)' }}>{
+                                            getScoreTeam('white')
+                                        }</h5>
                                     </div>
+
                                 </div>
                                 <div style={{ marginLeft: '10px' }}>
                                     <i className={'fas fa-chevron-left'} style={{ cursor: 'pointer', fontSize: '20px', color: 'white', marginLeft: '5px', marginRight: '5px' }} onClick={() => { setDisplayedBoardHandler('+') }}></i>

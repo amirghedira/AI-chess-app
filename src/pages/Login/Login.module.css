@@ -1,0 +1,40 @@
+.mainContainer {
+    background-color: rgb(50, 50, 50);
+    height: 100vh;
+    width: 100%;
+}
+
+.mainRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.loginContainer {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+.inputLabel {
+    font-size: 13px;
+    color: black;
+}
+
+.inputGroupContainer {
+    margin: 10px 0px 10px 0px;
+}
+
+.buttonContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.loginButton {
+    background-color: #B1833E !important;
+    border: none !important;
+    width: 100px;
+}
