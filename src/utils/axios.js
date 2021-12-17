@@ -4,7 +4,7 @@ const production = true;
 // const host = production ? '/' : 'http://localhost:5000'
 
 
-const host = production ? 'https://addresti-backend.herokuapp.com' : 'http://localhost:5000'
+const host = production ? 'https://chessnodeapi.herokuapp.com' : 'http://localhost:5000'
 
 const axiosInstance = axios.create({ baseURL: host })
 axiosInstance.interceptors.request.use(
