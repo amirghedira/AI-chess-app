@@ -3,10 +3,8 @@
     background-color: rgb(50, 50, 50);
 }
 
-.boardContainer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.mainBoardContainer {
+    transform: rotate(180deg);
 }
 
 .boardRow {
@@ -18,6 +16,8 @@
     align-items: center;
     justify-content: center;
     height: 80px;
+    transform: rotate(180deg);
+
     position: relative;
     width: 80px;
 

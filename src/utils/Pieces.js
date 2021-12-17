@@ -16,23 +16,23 @@ const WHITE_ROCK = { piece: 'rock', team: 'white', value: '5', img: whiteRockPie
 const WHITE_QUEEN = { piece: 'queen', team: 'white', value: '9', img: whiteQueenPieceImg }
 const WHITE_KNIGHT = { piece: 'knight', team: 'white', value: '3', img: whiteknightPieceImg }
 const WHITE_KING = { piece: 'king', team: 'white', value: '0', img: whiteKingPieceImg }
-const WHITE_BIPHOP = { piece: 'bishop', team: 'white', value: '9', img: whitebishopPieceImg }
+const WHITE_BISHOP = { piece: 'bishop', team: 'white', value: '9', img: whitebishopPieceImg }
 
 const BLACK_PAWN = { piece: 'pawn', team: 'black', value: '1', img: blackPawnPieceImg }
 const BLACK_ROCK = { piece: 'rock', team: 'black', value: '5', img: blackRockPieceImg }
 const BLACK_QUEEN = { piece: 'queen', team: 'black', value: '9', img: blackQueenPieceImg }
 const BLACK_KNIGHT = { piece: 'knight', team: 'black', value: '3', img: blackknightPieceImg }
 const BLACK_KING = { piece: 'king', team: 'black', value: '0', img: blackKingPieceImg }
-const BLACK_BIPHOP = { piece: 'bishop', team: 'black', value: '9', img: blackbishopPieceImg }
+const BLACK_BISHOP = { piece: 'bishop', team: 'black', value: '9', img: blackbishopPieceImg }
 
 
 export {
-    WHITE_BIPHOP,
+    WHITE_BISHOP,
     WHITE_KING,
     WHITE_KNIGHT,
     WHITE_QUEEN,
     WHITE_ROCK, WHITE_PAWN,
-    BLACK_BIPHOP,
+    BLACK_BISHOP,
     BLACK_KING,
     BLACK_KNIGHT,
     BLACK_PAWN,
