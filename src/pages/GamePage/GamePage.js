@@ -11,7 +11,9 @@ import {
     checkPieceMovePreventKingCheck,
     checkPiecePreventKingCheck,
     getPassedPawn,
-    isFreeBox
+    isFreeBox,
+    addBoardImage,
+    cleanBoardImage
 } from '../../utils/GameFunctions'
 import EndGameModal from './EndGameModal/EndGameModal'
 import {
@@ -29,9 +31,8 @@ import {
 } from '../../utils/Pieces'
 import PromotePieceModal from './PromotePieceModal/PromotePieceModal'
 import GlobalContext from '../../context/GlobalContext'
-import axiosInstance from '../../utils/axios'
+import axios from '../../utils/axios'
 import GameInvitationModal from './GameInvitationModal/GameInvitationModal'
-
 
 const GamePage = () => {
 
@@ -50,7 +51,7 @@ const GamePage = () => {
     const [isGameEnded, setIsGameEnded] = React.useState(true)
     const [endGameInfoModal, setEndGameInfoModal] = React.useState({ isOpen: false })
     const [promotePieceModal, setPromotePieceModal] = React.useState({ isOpen: false })
-    const [timer, setTimer] = React.useState({ black: '05:00', white: '05:00' })
+    const [timer, setTimer] = React.useState({ black: '01:00', white: '01:00' })
     const [oponent, setOponent] = React.useState(null)
     const timerInterval = React.useRef(null)
     const context = React.useContext(GlobalContext)
@@ -90,80 +91,15 @@ const GamePage = () => {
     React.useEffect(() => {
         if (!isGameEnded) {
             context.socket.off('played-move')
-            context.socket.on('played-move', ({ boardGame }) => {
-                console.log('played-move')
-                const receivedBoard = []
-                boardGame.forEach(row => {
-                    let _row = []
-                    row.forEach(box => {
-                        if (box) {
-                            let _box = {}
-                            switch (box.piece) {
-                                case 'pawn': {
-                                    if (box.team === 'white')
-                                        _box = WHITE_PAWN
-                                    else
-                                        _box = BLACK_PAWN
-                                    break;
-                                }
-                                case 'bishop': {
-                                    if (box.team === 'white')
-                                        _box = WHITE_BISHOP
-                                    else
-
-                                        _box = BLACK_BISHOP
-                                    break;
-                                }
-                                case 'queen': {
-                                    if (box.team === 'white')
-                                        _box = WHITE_QUEEN
-                                    else
-
-                                        _box = BLACK_QUEEN
-                                    break;
-                                }
-                                case 'rock': {
-                                    if (box.team === 'white')
-                                        _box = WHITE_ROCK
-                                    else
-
-                                        _box = BLACK_ROCK
-                                    break;
-                                }
-                                case 'knight': {
-                                    if (box.team === 'white')
-                                        _box = WHITE_KNIGHT
-                                    else
-
-                                        _box = BLACK_KNIGHT
-                                    break;
-                                }
-                                case 'king': {
-                                    if (box.team === 'white')
-                                        _box = WHITE_KING
-                                    else
-
-                                        _box = BLACK_KING
-                                    break;
-                                }
-                                default:
-                                    break;
-                            }
-                            _row.push(_box)
-
-                        } else {
-                            _row.push(box)
-                        }
-
-                    })
-                    receivedBoard.push(_row)
-                })
+            context.socket.on('played-move', ({ boardGame, lastMove }) => {
+                const receivedBoard = addBoardImage(boardGame)
 
                 setCurrentTeam((team) => {
                     return team === 'white' ? 'black' : 'white'
                 })
                 setIsKingChecked(null)
                 setBoardState(JSON.parse(JSON.stringify(receivedBoard)))
+                setLastMove(lastMove)
             })
         } else {
             context.socket.off('played-move')
@@ -172,7 +108,7 @@ const GamePage = () => {
     }, [isGameEnded])
 
 
-    React.useEffect(() => {
+    React.useEffect(async () => {
         if (boardState)
             setPreviousBoards((_previousBoards) => {
                 setCurrentBoardIndex(_previousBoards.length)
@@ -183,6 +119,14 @@ const GamePage = () => {
             })
     }, [boardState])
 
+    React.useEffect(() => {
+        if (game && isGameEnded) {
+            axios.patch(`/game/${game._id}`, { game })
+                .then(res => {
+                    console.log(res)
+                })
+        }
+    }, [game, isGameEnded])
     React.useEffect(() => {
         setDisplayedBoard(previsousBoards[currentBoardIndex])
     }, [currentBoardIndex, previsousBoards])
@@ -202,12 +146,14 @@ const GamePage = () => {
             setTimer({ ...timer, [currentTeam]: minutes + ":" + seconds })
             if (--time < 0) {
                 clearInterval(timerInterval.current)
-                let wonTeam = currentTeam === 'white' ? 'Black' : 'White'
+                let wonTeam = currentTeam === 'white' ? 'black' : 'white'
                 setEndGameInfoModal({
                     isOpen: true,
                     title: `${wonTeam} won`,
+                    score: `${game.oponents[wonTeam] === context.user._id ? '+7' : '-7'}`,
                     description: `${wonTeam} won by time`
                 })
+                setGame({ ...game, winnerTeam: wonTeam, result: 'time' })
                 setIsGameEnded(true)
             }
             timerInterval.current = setInterval(function () {
@@ -218,12 +164,15 @@ const GamePage = () => {
                 setTimer({ ...timer, [currentTeam]: minutes + ":" + seconds })
                 if (--time < 0) {
                     clearInterval(timerInterval.current)
-                    let wonTeam = currentTeam === 'white' ? 'Black' : 'White'
+                    let wonTeam = currentTeam === 'white' ? 'black' : 'white'
                     setEndGameInfoModal({
                         isOpen: true,
                         title: `${wonTeam} won`,
+                        userScore: context.user.score,
+                        score: `${game.oponents[wonTeam] === context.user._id ? '+7' : '-7'}`,
                         description: `${wonTeam} won by time`
                     })
+                    setGame({ ...game, winnerTeam: wonTeam, result: 'time' })
                     setIsGameEnded(true)
                 }
             }, 1000);
@@ -413,11 +362,15 @@ const GamePage = () => {
             }
             if (countBlackKnight + countWhiteBishop + countWhiteKnight + countBlackBishop <= 2) {
                 setIsGameEnded(true)
+                setGame({ ...game, winnerTeam: 'none', result: 'materials' })
                 return setEndGameInfoModal({
                     isOpen: true,
+                    userScore: context.user.score,
+                    score: 0,
                     title: 'Draw !',
                     description: 'Insufficient mating material'
                 })
+
             }
 
         }
@@ -448,23 +401,34 @@ const GamePage = () => {
             if (isKingChecked) {
                 let wonTeam = ''
                 if (currentTeam === 'white') {
-                    wonTeam = 'Black'
+                    wonTeam = 'black'
                 } else {
-                    wonTeam = 'White'
+                    wonTeam = 'white'
 
                 }
+
                 setEndGameInfoModal({
                     isOpen: true,
                     title: `${wonTeam} won`,
+                    userScore: context.user.score,
+                    score: `${game.oponents[wonTeam] === context.user._id ? '+7' : '-7'}`,
                     description: `${wonTeam} won by checkmate`
                 })
+
+                setGame({ ...game, winnerTeam: wonTeam, result: 'checkmate' })
+
             } else {
                 setEndGameInfoModal({
                     isOpen: true,
                     title: 'Draw !',
+                    userScore: context.user.score,
+                    score: 0,
                     description: 'Game drawn by stalemate'
                 })
+                setGame({ ...game, winnerTeam: 'none', result: 'stalemate' })
+
             }
+            clearInterval(timerInterval.current)
             setIsGameEnded(true)
         }
         // eslint-disable-next-line
@@ -484,7 +448,7 @@ const GamePage = () => {
 
     }
 
-    const clickedPieceHandler = (row, box) => {
+    const clickedPieceHandler = async (row, box) => {
         if (isGameEnded)
             return
         if (currentBoardIndex !== previsousBoards.length - 1)
@@ -504,10 +468,10 @@ const GamePage = () => {
             }
         }
         if (!(boardState[row][box]) || boardState[row][box].team !== currentTeam) {
+            const _boardState = JSON.parse(JSON.stringify(boardState));
             if (isValidNextGame(row, box)) {
                 if (isKingChecked)
                     setIsKingChecked(null)
-                const _boardState = JSON.parse(JSON.stringify(boardState));
                 _boardState[clickedBox.row][clickedBox.box] = null;
                 if (clickedBox.piece.piece === 'king') {
                     if (currentTeam === 'black') {
@@ -621,11 +585,12 @@ const GamePage = () => {
                     return 'white'
                 })
                 setLastMove({ from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece })
-                context.socket.emit('make-move', { userId: oponent._id, boardGame: _boardState })
-
+                context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
             }
             setPieceSuggestions([])
             setClickedBox(null)
+            await axios.patch(`/game/move/${game._id}`, { move: JSON.stringify(cleanBoardImage(_boardState)) })
+
         }
         else if (checkClickedPiece(row, box) || boardState[row][box].team !== currentTeam)
             setClickedBox(null)
@@ -728,7 +693,7 @@ const GamePage = () => {
     }
 
     const startNewGameHandler = () => {
-        axiosInstance.post('/game')
+        axios.post('/game', { board: JSON.stringify(cleanBoardImage(boardState)) })
             .then(res => {
                 setGame(res.data.game)
 
@@ -776,7 +741,9 @@ const GamePage = () => {
             />
             <EndGameModal
                 isOpen={endGameInfoModal.isOpen} toggle={() => { setEndGameInfoModal({ ...endGameInfoModal, isOpen: false }) }}
-                title={endGameInfoModal.title} description={endGameInfoModal.description} />
+                title={endGameInfoModal.title} description={endGameInfoModal.description}
+                userScore={endGameInfoModal.userScore}
+                score={endGameInfoModal.score} />
             <PromotePieceModal isOpen={promotePieceModal.isOpen}
                 toggle={() => setPromotePieceModal({ isOpen: false })}
                 team={currentTeam}
@@ -863,8 +830,8 @@ const GamePage = () => {
 
                                 </div>
                                 <div style={{ marginLeft: '10px' }}>
-                                    <i className={'fas fa-chevron-left'} style={{ cursor: 'pointer', fontSize: '20px', color: 'white', marginLeft: '5px', marginRight: '5px' }} onClick={() => { setDisplayedBoardHandler('+') }}></i>
-                                    <i className={'fas fa-chevron-right'} style={{ cursor: 'pointer', fontSize: '20px', color: 'white', marginLeft: '5px', marginRight: '5px' }} onClick={() => { setDisplayedBoardHandler('-') }}></i>
+                                    <i className={'fas fa-chevron-left'} style={{ cursor: 'pointer', fontSize: '20px', color: 'white', marginLeft: '5px', marginRight: '5px' }} onClick={() => { setDisplayedBoardHandler('-') }}></i>
+                                    <i className={'fas fa-chevron-right'} style={{ cursor: 'pointer', fontSize: '20px', color: 'white', marginLeft: '5px', marginRight: '5px' }} onClick={() => { setDisplayedBoardHandler('+') }}></i>
                                 </div>
                             </div>
                             {

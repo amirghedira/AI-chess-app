@@ -1,3 +1,17 @@
+import {
+    WHITE_KING,
+    WHITE_KNIGHT,
+    WHITE_QUEEN,
+    WHITE_ROCK, WHITE_PAWN,
+    WHITE_BISHOP,
+    BLACK_BISHOP,
+    BLACK_KING,
+    BLACK_KNIGHT,
+    BLACK_PAWN,
+    BLACK_QUEEN,
+    BLACK_ROCK
+} from './Pieces'
+
 const isFreeBox = (box, team) => {
 
     if (!box)
@@ -761,8 +775,96 @@ const isCheckedKing = (board, team, kingPosition) => {
 }
 
 
+const addBoardImage = (boardGame) => {
+    const newBoard = []
+    boardGame.forEach(row => {
+        let _row = []
+        row.forEach(box => {
+            if (box) {
+                let _box = {}
+                switch (box.piece) {
+                    case 'pawn': {
+                        if (box.team === 'white')
+                            _box = WHITE_PAWN
+                        else
+                            _box = BLACK_PAWN
+                        break;
+                    }
+                    case 'bishop': {
+                        if (box.team === 'white')
+                            _box = WHITE_BISHOP
+                        else
+
+                            _box = BLACK_BISHOP
+                        break;
+                    }
+                    case 'queen': {
+                        if (box.team === 'white')
+                            _box = WHITE_QUEEN
+                        else
+
+                            _box = BLACK_QUEEN
+                        break;
+                    }
+                    case 'rock': {
+                        if (box.team === 'white')
+                            _box = WHITE_ROCK
+                        else
+
+                            _box = BLACK_ROCK
+                        break;
+                    }
+                    case 'knight': {
+                        if (box.team === 'white')
+                            _box = WHITE_KNIGHT
+                        else
+
+                            _box = BLACK_KNIGHT
+                        break;
+                    }
+                    case 'king': {
+                        if (box.team === 'white')
+                            _box = WHITE_KING
+                        else
+
+                            _box = BLACK_KING
+                        break;
+                    }
+                    default:
+                        break;
+                }
+                _row.push(_box)
+
+            } else {
+                _row.push(box)
+            }
+
+        })
+        newBoard.push(_row)
+    })
+    return newBoard
+}
+
+const cleanBoardImage = (gameBoard) => {
+
+    const newBoard = []
+    gameBoard.forEach(row => {
+        const _row = []
+        row.forEach(box => {
+            if (box)
+                _row.push({ ...box, img: '' })
+            else
+                _row.push(null)
+        })
+        newBoard.push(_row)
+    })
+    return newBoard
+
+}
 export {
     isCheckedKing,
+    addBoardImage,
+    cleanBoardImage,
     getBishopMoves,
     getKnightMoves,
     getRockMoves,

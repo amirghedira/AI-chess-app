@@ -9,7 +9,7 @@ function EndGameModal(props) {
                 <div>
                     <h1 className={classes.title}>{props.title}</h1>
                     <h5 className={classes.description}>{props.description}</h5>
-                    <h1 className={classes.scoreText}>899(+7)</h1>
+                    <h1 className={classes.scoreText}>{props.userScore}({props.score})</h1>
 
 
                 </div>

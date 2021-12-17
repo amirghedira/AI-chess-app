@@ -15,7 +15,6 @@ server.listen(process.env.PORT || 5000, () => {
         socket.on('connectuser', async (token) => {
             try {
                 let user = jwt.decode(token, process.env.ACCESS_TOKEN_KEY)
-                console.log(user)
                 if (user) {
                     const userIndex = ConnectedUsers.findIndex(connecteduser => {
                         return connecteduser.userid === user._id
@@ -72,16 +71,14 @@ server.listen(process.env.PORT || 5000, () => {
                 })
         })
 
-        socket.on('make-move', ({ userId, boardGame }) => {
+        socket.on('make-move', ({ userId, boardGame, lastMove }) => {
 
             const userIndex = ConnectedUsers.findIndex(connecteduser => {
                 return connecteduser.userid === userId
             })
-
-            console.log(ConnectedUsers)
             if (userIndex >= 0)
                 ConnectedUsers[userIndex].socketIds.forEach(socketId => {
-                    socket.broadcast.to(socketId).emit('played-move', { boardGame })
+                    socket.broadcast.to(socketId).emit('played-move', { boardGame, lastMove })
                 })
         })
     })

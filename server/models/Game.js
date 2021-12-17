@@ -6,8 +6,9 @@ const tokenSchema = new mongoose.Schema({
         white: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         black: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
     },
-    winner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    gameMoves: { type: String }
+    winnerTeam: { type: String, enum: ['none', 'white', 'black'] },
+    result: { type: String },
+    gameMoves: [{ type: String }]
 })
 
 
