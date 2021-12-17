@@ -1,6 +1,6 @@
 import axios from 'axios'
 import localStorageService from './localStorageService'
-const production = false;
+const production = true;
 // const host = production ? '/' : 'http://localhost:5000'
 
 

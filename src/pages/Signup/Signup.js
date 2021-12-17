@@ -24,13 +24,13 @@ const Signup = (props) => {
                         <h5 className={classes.inputLabel}>
                             Password
                         </h5>
-                        <Input className={classes.inputLogin} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} />
+                        <Input type='password' className={classes.inputLogin} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} />
                     </div>
                     <div className={classes.inputGroupContainer}>
                         <h5 className={classes.inputLabel}>
                             Confirm password
                         </h5>
-                        <Input className={classes.inputLogin} onChange={(e) => setNewUser({ ...newUser, repassword: e.target.value })} />
+                        <Input type='password' className={classes.inputLogin} onChange={(e) => setNewUser({ ...newUser, repassword: e.target.value })} />
                     </div>
                     <div className={classes.inputGroupContainer}>
                         <div className={classes.buttonContainer}>

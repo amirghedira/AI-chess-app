@@ -33,6 +33,7 @@ const Login = (props) => {
                         </h5>
                         <Input className={classes.inputLogin}
                             value={loginInfo.password}
+                            type='password'
                             onChange={(e) => { setLoginInfo({ ...loginInfo, password: e.target.value }) }}
                         />
                     </div>

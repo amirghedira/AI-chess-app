@@ -2,7 +2,7 @@
 
 const Game = require('../models/Game')
 const User = require('../models/User')
-const socket = require('socket.io-client')('http://localhost:5000')
+const socket = require('socket.io-client')(process.env.HOST)
 exports.getGame = async (req, res) => {
     try {
         const game = await Game.findOne({ _id: gameId })

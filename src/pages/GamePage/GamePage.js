@@ -57,7 +57,11 @@ const GamePage = () => {
     const context = React.useContext(GlobalContext)
     const [isOpenInvitationGame, setIsOpenInvitationGame] = React.useState(false)
     const [game, setGame] = React.useState(null)
+
     React.useEffect(() => {
+        if (!context.user)
+            return window.location.href = '/login'
+
         const _boardState = [
             [BLACK_ROCK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING, BLACK_BISHOP, BLACK_KNIGHT, BLACK_ROCK],
             [1, 2, 3, 4, 5, 6, 7, 8].map(i => BLACK_PAWN),
