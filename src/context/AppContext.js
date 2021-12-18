@@ -37,6 +37,10 @@ const AppContext = (props) => {
         }
         // eslint-disable-next-line
     }, []);
+
+    React.useEffect(() => {
+        console.log(oponent)
+    }, [oponent])
     return (
         <GlobalContext.Provider value={{
             user,

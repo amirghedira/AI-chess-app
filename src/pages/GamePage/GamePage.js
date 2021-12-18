@@ -68,15 +68,35 @@ const GamePage = () => {
             return window.location.href = '/login'
         initGame()
         context.socket.on('receive-invitation-game', ({ oponent, game }) => {
-            initGame()
+            setGame(game)
             context.setOponent(oponent)
             setIsOpenInvitationGame(true)
-            setGame(game)
         })
-        context.socket.on('accepted-challenge', ({ oponent }) => {
+        context.socket.on('accepted-challenge', ({ oponent, game }) => {
+            initGame()
             setOponent({ ...oponent })
+            context.setOponent({ ...oponent })
+            setGame(game)
             setLoadingModal(false)
             setIsGameEnded(false)
+        })
+        context.socket.on('abandaned-game', () => {
+            setGame((_game) => {
+                let wonTeam
+                if (_game.oponents.white === context.user._id)
+                    wonTeam = 'white'
+                else
+                    wonTeam = 'black'
+                setEndGameInfoModal({
+                    isOpen: true,
+                    title: `${wonTeam} won`,
+                    userScore: context.user.score,
+                    score: `${_game.oponents[wonTeam] === context.user._id ? '+7' : '-7'}`,
+                    description: `${wonTeam} won by abandant`
+                })
+                return { ..._game, winnerTeam: wonTeam, result: 'abandant' }
+            })
+            setIsGameEnded(true)
         })
         context.socket.on('rejected-challenge', ({ oponent }) => {
             context.setOponent({ ...oponent })
@@ -134,6 +154,7 @@ const GamePage = () => {
                     setOponent({ ...oponent, score: oponent.score + 7 })
                 }
             }
+            clearInterval(timerInterval.current)
 
             if (context.user._id === game.oponents.black)
                 return
@@ -166,6 +187,7 @@ const GamePage = () => {
                 setEndGameInfoModal({
                     isOpen: true,
                     title: `${wonTeam} won`,
+                    userScore: context.user.score,
                     score: `${game.oponents[wonTeam] === context.user._id ? '+7' : '-7'}`,
                     description: `${wonTeam} won by time`
                 })
@@ -725,7 +747,6 @@ const GamePage = () => {
         axios.post(`/game/player/${context.oponent._id}`)
             .then((res) => {
                 setLoadingModal(true)
-                setGame(res.data.game)
             })
             .catch(err => {
                 setIsOpenRejectedGame({
@@ -738,7 +759,6 @@ const GamePage = () => {
         setLoadingModal(true)
         axios.post('/game', { board: JSON.stringify(cleanBoardImage(boardState)) })
             .then(res => {
-                setGame(res.data.game)
             })
             .catch(err => {
                 console.log(err)
@@ -746,8 +766,8 @@ const GamePage = () => {
     }
     const acceptGameHandler = () => {
 
-        context.socket.emit('accept-challenge', { userId: context.oponent._id, oponent: context.user })
-        setOponent(context.oponent)
+        context.socket.emit('accept-challenge', { userId: context.oponent._id, oponent: context.user, game: game })
+        setOponent({ ...context.oponent })
         setIsGameEnded(false)
         setIsOpenInvitationGame(false)
 
@@ -772,8 +792,26 @@ const GamePage = () => {
                 })
             })
     }
+    const abandantGameHandler = () => {
+        context.socket.emit('abandant-game', { userId: oponent._id, oponent: context.user })
+        let wonTeam
+        if (game.oponents.white === context.user._id)
+            wonTeam = 'black'
+        else
+            wonTeam = 'white'
+        setEndGameInfoModal({
+            isOpen: true,
+            title: `${wonTeam} won`,
+            userScore: context.user.score,
+            score: `${game.oponents[wonTeam] === context.user._id ? '+7' : '-7'}`,
+            description: `${wonTeam} won by abandant`
+        })
+        setGame({ ...game, winnerTeam: wonTeam, result: 'abandant' })
+        setIsGameEnded(true)
+
+    }
     const isFlippedBoard = () => {
-        if (isGameEnded || !game || !oponent)
+        if (!game || !oponent)
             return false
 
         return game.oponents.black === context.user._id
@@ -908,6 +946,9 @@ const GamePage = () => {
                     <Button style={{ marginBottom: '10px', width: '100%' }} onClick={() => { setIsOpenFindPlayerModal(true) }}>
                         Play with someone
                     </Button>
+                    {!isGameEnded && <Button style={{ marginBottom: '10px', width: '100%' }} onClick={abandantGameHandler}>
+                        <i className='fas fa-flag'></i>
+                    </Button>}
                 </Col>
             </Row>
         </Container>
