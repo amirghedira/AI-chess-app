@@ -2,7 +2,7 @@ import React from 'react'
 import { Button, Modal, ModalBody, ModalHeader } from 'reactstrap';
 import classes from './GameInvitationModal.module.css'
 
-function GameInvitationModal(props) {
+const GameInvitationModal = (props) => {
     return (
         <Modal style={{ maxWidth: '400px' }} centered backdropClassName={classes.backdrop} isOpen={props.isOpen} toggle={() => props.toggle(false)}>
             <ModalHeader style={{ width: '100%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

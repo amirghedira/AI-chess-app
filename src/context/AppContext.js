@@ -3,6 +3,7 @@ import GlobalContext from './GlobalContext'
 import io from "socket.io-client";
 import axios, { host } from '../utils/axios'
 import LocalStorageService from '../utils/localStorageService';
+import LoadingPage from '../components/LoadingPage/LoadingPage';
 const AppContext = (props) => {
     const socket = React.useState(io(host))[0];
     const [user, setUser] = React.useState(null)
@@ -39,11 +40,14 @@ const AppContext = (props) => {
     return (
         <GlobalContext.Provider value={{
             user,
+            setUser,
             oponent,
             setOponent,
             socket,
         }}>
-            {!loadingUser && props.children}
+            {!loadingUser ? props.children
+                :
+                <LoadingPage />}
         </GlobalContext.Provider>
     )
 }

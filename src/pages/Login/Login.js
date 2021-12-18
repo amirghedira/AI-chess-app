@@ -3,9 +3,19 @@ import { Container, Row, Col, Input, Button } from 'reactstrap'
 import classes from './Login.module.css'
 import axios from '../../utils/axios'
 import LocalStorageService from '../../utils/localStorageService'
+import GlobalContext from '../../context/GlobalContext'
+import { useNavigate } from 'react-router-dom'
 const Login = (props) => {
     const [loginInfo, setLoginInfo] = React.useState({})
-
+    const context = React.useContext(GlobalContext)
+    const [loading, setLoading] = React.useState(true)
+    const navigate = useNavigate()
+    React.useEffect(() => {
+        if (context.user)
+            navigate('/game')
+        else
+            setLoading(false)
+    }, [])
     const loginHandler = () => {
         console.log(loginInfo)
         axios.post('/user/login', { ...loginInfo })
@@ -14,6 +24,8 @@ const Login = (props) => {
                 window.location.href = '/game'
             })
     }
+    if (loading)
+        return null
     return (
         <Container fluid className={classes.mainContainer}>
             <Row className={classes.mainRow}>

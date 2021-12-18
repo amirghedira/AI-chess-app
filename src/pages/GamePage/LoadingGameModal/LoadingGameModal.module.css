@@ -1,0 +1,58 @@
+.backdrop {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.title {
+    width: 100%;
+    text-align: center;
+    font-size: 22px;
+    color: black;
+    font-weight: 800;
+}
+
+.imgPawn {
+    height: 50px;
+    width: 50px;
+    -webkit-animation: spin 1s linear infinite;
+    -moz-animation: spin 1s linear infinite;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% {
+
+        transform: rotate(90deg);
+    }
+
+    75% {
+        transform: rotate(340deg);
+    }
+
+    50% {
+        transform: rotate(270deg);
+    }
+
+    25% {
+        transform: rotate(340deg);
+    }
+
+    0% {
+        transform: rotate(90deg);
+    }
+}
+
+.description {
+    width: 100%;
+    text-align: center;
+    font-size: 15px;
+    color: black;
+    font-weight: 500;
+}
+
+.scoreText {
+    width: 100%;
+    text-align: center;
+    font-size: 22px;
+    color: black;
+    font-weight: 800;
+}

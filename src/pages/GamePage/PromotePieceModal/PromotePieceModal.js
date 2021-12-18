@@ -15,7 +15,7 @@ import {
 const WHITE_PROMOTE_PIECES = [WHITE_ROCK, WHITE_QUEEN, WHITE_KNIGHT, WHITE_BISHOP]
 const BLACK_PROMOTE_PIECES = [BLACK_ROCK, BLACK_QUEEN, BLACK_KNIGHT, BLACK_BISHOP]
 
-function PromotePieceModal(props) {
+const PromotePieceModal = (props) => {
     return (
         <Modal style={{ maxWidth: '400px' }} centered backdropClassName={classes.backdrop} isOpen={props.isOpen}
             toggle={props.toggle}>

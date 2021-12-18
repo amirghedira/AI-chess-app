@@ -11,7 +11,6 @@ import {
     checkPieceMovePreventKingCheck,
     checkPiecePreventKingCheck,
     getPassedPawn,
-    isFreeBox,
     addBoardImage,
     cleanBoardImage
 } from '../../utils/GameFunctions'
@@ -33,6 +32,8 @@ import PromotePieceModal from './PromotePieceModal/PromotePieceModal'
 import GlobalContext from '../../context/GlobalContext'
 import axios from '../../utils/axios'
 import GameInvitationModal from './GameInvitationModal/GameInvitationModal'
+import Board from '../../components/Board/Board'
+import LoadingGameModal from './LoadingGameModal/LoadingGameModal'
 
 const GamePage = () => {
 
@@ -51,44 +52,30 @@ const GamePage = () => {
     const [isGameEnded, setIsGameEnded] = React.useState(true)
     const [endGameInfoModal, setEndGameInfoModal] = React.useState({ isOpen: false })
     const [promotePieceModal, setPromotePieceModal] = React.useState({ isOpen: false })
-    const [timer, setTimer] = React.useState({ black: '01:00', white: '01:00' })
+    const [timer, setTimer] = React.useState({ black: '05:00', white: '05:00' })
     const [oponent, setOponent] = React.useState(null)
     const timerInterval = React.useRef(null)
     const context = React.useContext(GlobalContext)
     const [isOpenInvitationGame, setIsOpenInvitationGame] = React.useState(false)
     const [game, setGame] = React.useState(null)
+    const [loadingModal, setLoadingModal] = React.useState(false)
 
     React.useEffect(() => {
         if (!context.user)
             return window.location.href = '/login'
-
-        const _boardState = [
-            [BLACK_ROCK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING, BLACK_BISHOP, BLACK_KNIGHT, BLACK_ROCK],
-            [1, 2, 3, 4, 5, 6, 7, 8].map(i => BLACK_PAWN),
-            [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
-            [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
-            [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
-            [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
-            [1, 2, 3, 4, 5, 6, 7, 8].map(i => WHITE_PAWN),
-            [WHITE_ROCK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING, WHITE_BISHOP, WHITE_KNIGHT, WHITE_ROCK],
-        ]
-        setEatedPieces([])
-        setAllowedBlackCastling({ kingSide: true, queenSide: true })
-        setAllowedWhiteCastling({ kingSide: true, queenSide: true })
-        setBoardState(_boardState)
-        setIsKingChecked(null)
-        setLastMove(null)
-        setCurrentTeam('white')
-        setClickedBox(null)
+        initGame()
         context.socket.on('receive-invitation-game', ({ oponent, game }) => {
+            initGame()
             context.setOponent(oponent)
             setIsOpenInvitationGame(true)
             setGame(game)
         })
         context.socket.on('accepted-challenge', ({ oponent }) => {
             setOponent({ ...oponent })
+            setLoadingModal(false)
             setIsGameEnded(false)
         })
+        // eslint-disable-next-line
     }, [])
 
 
@@ -109,10 +96,12 @@ const GamePage = () => {
             context.socket.off('played-move')
 
         }
+
+        // eslint-disable-next-line
     }, [isGameEnded])
 
 
-    React.useEffect(async () => {
+    React.useEffect(() => {
         if (boardState)
             setPreviousBoards((_previousBoards) => {
                 setCurrentBoardIndex(_previousBoards.length)
@@ -124,13 +113,26 @@ const GamePage = () => {
     }, [boardState])
 
     React.useEffect(() => {
-        if (game && isGameEnded) {
+        if (game && isGameEnded && endGameInfoModal.isOpen) {
+            console.log('heyyyy')
+            if (game.winnerTeam !== 'none') {
+                if (game.oponents[game.winnerTeam] === context.user._id) {
+                    context.setUser({ ...context.user, score: context.user.score + 7 })
+                    setOponent({ ...oponent, score: oponent.score - 7 })
+                } else {
+                    context.setUser({ ...context.user, score: context.user.score - 7 })
+                    setOponent({ ...oponent, score: oponent.score + 7 })
+                }
+            }
+
+            if (context.user._id === game.oponents.black)
+                return
             axios.patch(`/game/${game._id}`, { game })
                 .then(res => {
-                    console.log(res)
                 })
         }
-    }, [game, isGameEnded])
+        // eslint-disable-next-line
+    }, [game, isGameEnded, endGameInfoModal])
     React.useEffect(() => {
         setDisplayedBoard(previsousBoards[currentBoardIndex])
     }, [currentBoardIndex, previsousBoards])
@@ -302,7 +304,7 @@ const GamePage = () => {
 
     React.useEffect(() => {
 
-        if (!boardState)
+        if (!boardState || !game)
             return
         let foundPawn = false
         let foundRock = false
@@ -438,18 +440,29 @@ const GamePage = () => {
         // eslint-disable-next-line
     }, [isKingChecked, boardState, currentTeam])
 
-    const getColorBox = (rowIndex, boxIndex) => {
-
-        if (rowIndex % 2 === 0) {
-            if (boxIndex % 2 === 0)
-                return '#D1B486'
-            return '#7F5531'
-        } else {
-            if (boxIndex % 2 === 0)
-                return '#7F5531'
-            return '#D1B486'
-        }
-
+    const initGame = () => {
+        const _boardState = [
+            [BLACK_ROCK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING, BLACK_BISHOP, BLACK_KNIGHT, BLACK_ROCK],
+            [1, 2, 3, 4, 5, 6, 7, 8].map(i => BLACK_PAWN),
+            [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
+            [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
+            [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
+            [1, 2, 3, 4, 5, 6, 7, 8].map(i => null),
+            [1, 2, 3, 4, 5, 6, 7, 8].map(i => WHITE_PAWN),
+            [WHITE_ROCK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING, WHITE_BISHOP, WHITE_KNIGHT, WHITE_ROCK],
+        ]
+        setGame(null)
+        setEatedPieces([])
+        setAllowedBlackCastling({ kingSide: true, queenSide: true })
+        setAllowedWhiteCastling({ kingSide: true, queenSide: true })
+        setBoardState(_boardState)
+        setIsKingChecked(null)
+        setEndGameInfoModal({})
+        setLastMove(null)
+        setCurrentTeam('white')
+        setClickedBox(null)
+        setOponent(null)
+        setTimer({ black: '05:00', white: '05:00' })
     }
 
     const clickedPieceHandler = async (row, box) => {
@@ -652,11 +665,7 @@ const GamePage = () => {
             return false
         return true
     }
-    const checkIsLastMove = (row, box) => {
-        if (!lastMove)
-            return false
-        return (lastMove.from.row === row && lastMove.from.box === box) || (lastMove.to.row === row && lastMove.to.box === box)
-    }
+
 
     const setDisplayedBoardHandler = (sign) => {
 
@@ -695,12 +704,18 @@ const GamePage = () => {
                 return prevV + currentV
             }, 0)
     }
+    const startNewGameAfteraGameHandler = () => {
+        initGame()
+        startNewGameHandler()
+    }
+    const rematchHandler = () => {
 
+    }
     const startNewGameHandler = () => {
+        setLoadingModal(true)
         axios.post('/game', { board: JSON.stringify(cleanBoardImage(boardState)) })
             .then(res => {
                 setGame(res.data.game)
-
             })
             .catch(err => {
                 console.log(err)
@@ -718,17 +733,8 @@ const GamePage = () => {
         setIsOpenInvitationGame(false)
 
     }
-
-    const getTransformBoard = () => {
-        if (!oponent || !game)
-            return 'none'
-        if (isFlippedBoard())
-            return 'rotate(180deg)'
-        return 'none'
-
-    }
     const isFlippedBoard = () => {
-        if (!game)
+        if (!game || !oponent)
             return false
         return game.oponents.black === context.user._id
     }
@@ -736,6 +742,7 @@ const GamePage = () => {
         return null
     return (
         <Container fluid className={classes.mainContainer}>
+            <LoadingGameModal isOpen={loadingModal} />
             <GameInvitationModal
                 isOpen={isOpenInvitationGame}
                 toggle={() => setIsOpenInvitationGame(!isOpenInvitationGame)}
@@ -744,6 +751,8 @@ const GamePage = () => {
                 username={context.oponent?.username}
             />
             <EndGameModal
+                onRematch={rematchHandler}
+                onNewGame={startNewGameAfteraGameHandler}
                 isOpen={endGameInfoModal.isOpen} toggle={() => { setEndGameInfoModal({ ...endGameInfoModal, isOpen: false }) }}
                 title={endGameInfoModal.title} description={endGameInfoModal.description}
                 userScore={endGameInfoModal.userScore}
@@ -792,27 +801,16 @@ const GamePage = () => {
                     </Row>
                     <Row>
                         <Col style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div className={classes.mainBoardContainer} style={{ transform: getTransformBoard() }}>
-                                {displayedBoard.map((row, rowIndex) => (
-                                    <div key={rowIndex} className={classes.boardRow}>
-                                        {row.map((box, boxIndex) => (
-                                            <div key={boxIndex} onClick={() => clickedPieceHandler(rowIndex, boxIndex)}
-
-                                                style={{ transform: getTransformBoard(), backgroundColor: checkCheckedKing(rowIndex, boxIndex) ? '#ad0000' : checkClickedPiece(rowIndex, boxIndex) ? '#B1833E' : checkIsLastMove(rowIndex, boxIndex) ? '#b38b51' : `${getColorBox(rowIndex, boxIndex)}` }}
-                                                className={classes.boxContainer} >
-                                                {clickedBox && isValidNextGame(rowIndex, boxIndex) && <React.Fragment>
-                                                    {isFreeBox(box, currentTeam) === "eat" ? <div className={classes.eatMoveBox}></div>
-                                                        :
-                                                        <div className={classes.possibleMoveBox}></div>
-                                                    }
-                                                </React.Fragment>}
-                                                {box && <div className={classes.pieceImg} style={{ backgroundImage: `url(${box.img})` }} />}
-
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
+                            <Board
+                                checkClickedPiece={checkClickedPiece}
+                                checkCheckedKing={checkCheckedKing}
+                                activeBox={clickedBox}
+                                clickedPiece={clickedPieceHandler}
+                                board={displayedBoard}
+                                isValidNextGame={isValidNextGame}
+                                lastMove={lastMove}
+                                currentTeam={currentTeam}
+                                isFlippedBoard={isFlippedBoard()} />
                         </Col>
                     </Row>
                     <Row className={classes.mainUserInfoContainer}>
@@ -854,7 +852,9 @@ const GamePage = () => {
                     </Row>
                 </Col>
                 <Col xs="2">
-                    <Button onClick={startNewGameHandler}>New Game</Button>
+                    <Button onClick={startNewGameHandler}>
+                        New Game
+                    </Button>
                 </Col>
             </Row>
         </Container>
