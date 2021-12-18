@@ -34,6 +34,8 @@ import axios from '../../utils/axios'
 import GameInvitationModal from './GameInvitationModal/GameInvitationModal'
 import Board from '../../components/Board/Board'
 import LoadingGameModal from './LoadingGameModal/LoadingGameModal'
+import RejectedGameModal from './RejectedGameModal/RejectedGameModal'
+import FindPlayerModal from './FindPlayerModal/FindPlayerModal'
 
 const GamePage = () => {
 
@@ -59,7 +61,8 @@ const GamePage = () => {
     const [isOpenInvitationGame, setIsOpenInvitationGame] = React.useState(false)
     const [game, setGame] = React.useState(null)
     const [loadingModal, setLoadingModal] = React.useState(false)
-
+    const [isOpenRejectedGame, setIsOpenRejectedGame] = React.useState({ isOpen: false })
+    const [isOpenFindPlayerModal, setIsOpenFindPlayerModal] = React.useState(false)
     React.useEffect(() => {
         if (!context.user)
             return window.location.href = '/login'
@@ -74,6 +77,14 @@ const GamePage = () => {
             setOponent({ ...oponent })
             setLoadingModal(false)
             setIsGameEnded(false)
+        })
+        context.socket.on('rejected-challenge', ({ oponent }) => {
+            context.setOponent({ ...oponent })
+            setIsOpenRejectedGame({
+                isOpen: true,
+                message: `${oponent.username} has rejected your challenge`
+            })
+            setLoadingModal(false)
         })
         // eslint-disable-next-line
     }, [])
@@ -114,7 +125,6 @@ const GamePage = () => {
 
     React.useEffect(() => {
         if (game && isGameEnded && endGameInfoModal.isOpen) {
-            console.log('heyyyy')
             if (game.winnerTeam !== 'none') {
                 if (game.oponents[game.winnerTeam] === context.user._id) {
                     context.setUser({ ...context.user, score: context.user.score + 7 })
@@ -261,12 +271,6 @@ const GamePage = () => {
         }
         // eslint-disable-next-line
     }, [boardState, clickedBox])
-
-    React.useEffect(() => {
-        if (context.oponent) {
-            setIsOpenInvitationGame(true)
-        }
-    }, [context.oponent])
 
     React.useEffect(() => {
         if (boardState) {
@@ -462,6 +466,7 @@ const GamePage = () => {
         setCurrentTeam('white')
         setClickedBox(null)
         setOponent(null)
+        setIsOpenRejectedGame({ isOpen: false })
         setTimer({ black: '05:00', white: '05:00' })
     }
 
@@ -708,8 +713,26 @@ const GamePage = () => {
         initGame()
         startNewGameHandler()
     }
+    const rematchHandlerAfterEndGame = () => {
+        setEndGameInfoModal({ isOpen: false })
+        rematchHandler()
+    }
+    const rematchHandlerAfterReject = () => {
+        setIsOpenRejectedGame({ isOpen: false })
+        rematchHandler()
+    }
     const rematchHandler = () => {
-
+        axios.post(`/game/player/${context.oponent._id}`)
+            .then((res) => {
+                setLoadingModal(true)
+                setGame(res.data.game)
+            })
+            .catch(err => {
+                setIsOpenRejectedGame({
+                    isOpen: true,
+                    message: `${context.oponent.username} is not available`
+                })
+            })
     }
     const startNewGameHandler = () => {
         setLoadingModal(true)
@@ -731,11 +754,28 @@ const GamePage = () => {
     }
     const rejectGameHandler = () => {
         setIsOpenInvitationGame(false)
+        context.socket.emit('reject-challenge', { userId: context.oponent._id, oponent: context.user })
+
 
     }
+    const selectPlayerHandler = (player) => {
+        axios.post(`/game/player/${player._id}`)
+            .then((res) => {
+                setGame(res.data.game)
+                setIsOpenFindPlayerModal(false)
+                setLoadingModal(true)
+            })
+            .catch(err => {
+                setIsOpenRejectedGame({
+                    isOpen: true,
+                    message: `${player.username} is not available`
+                })
+            })
+    }
     const isFlippedBoard = () => {
-        if (!game || !oponent)
+        if (isGameEnded || !game || !oponent)
             return false
+
         return game.oponents.black === context.user._id
     }
     if (!displayedBoard)
@@ -743,15 +783,25 @@ const GamePage = () => {
     return (
         <Container fluid className={classes.mainContainer}>
             <LoadingGameModal isOpen={loadingModal} />
+            <FindPlayerModal
+                isOpen={isOpenFindPlayerModal}
+                selectedPlayer={selectPlayerHandler}
+                toggle={() => { setIsOpenFindPlayerModal(!isOpenFindPlayerModal) }} />
+            <RejectedGameModal
+                isOpen={isOpenRejectedGame.isOpen}
+                toggle={() => setIsOpenRejectedGame({ isOpen: !isOpenRejectedGame.isOpen })}
+                onNewGame={startNewGameAfteraGameHandler}
+                onRematch={rematchHandlerAfterReject}
+                message={isOpenRejectedGame.message}
+            />
             <GameInvitationModal
                 isOpen={isOpenInvitationGame}
-                toggle={() => setIsOpenInvitationGame(!isOpenInvitationGame)}
                 onAccept={acceptGameHandler}
                 onReject={rejectGameHandler}
                 username={context.oponent?.username}
             />
             <EndGameModal
-                onRematch={rematchHandler}
+                onRematch={rematchHandlerAfterEndGame}
                 onNewGame={startNewGameAfteraGameHandler}
                 isOpen={endGameInfoModal.isOpen} toggle={() => { setEndGameInfoModal({ ...endGameInfoModal, isOpen: false }) }}
                 title={endGameInfoModal.title} description={endGameInfoModal.description}
@@ -852,8 +902,11 @@ const GamePage = () => {
                     </Row>
                 </Col>
                 <Col xs="2">
-                    <Button onClick={startNewGameHandler}>
+                    <Button style={{ marginBottom: '10px', width: '100%' }} onClick={startNewGameHandler}>
                         New Game
+                    </Button>
+                    <Button style={{ marginBottom: '10px', width: '100%' }} onClick={() => { setIsOpenFindPlayerModal(true) }}>
+                        Play with someone
                     </Button>
                 </Col>
             </Row>

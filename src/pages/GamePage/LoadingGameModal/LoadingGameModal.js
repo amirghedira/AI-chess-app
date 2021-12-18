@@ -4,7 +4,7 @@ import classes from './LoadingGameModal.module.css'
 import { BLACK_PAWN } from '../../../utils/Pieces'
 const LoadingGameModal = (props) => {
     return (
-        <Modal style={{ maxWidth: '400px' }} centered backdropClassName={classes.backdrop} isOpen={props.isOpen} toggle={() => props.toggle(false)}>
+        <Modal style={{ maxWidth: '400px' }} centered backdropClassName={classes.backdrop} isOpen={props.isOpen}>
             <ModalHeader style={{ width: '100%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div>
                     <h1 className={classes.title}>Loading Game</h1>

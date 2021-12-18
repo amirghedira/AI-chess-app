@@ -1,0 +1,31 @@
+.mainContainer {
+    display: flex;
+    margin-top: 5px;
+    align-items: center;
+    margin-bottom: 5px;
+    cursor: pointer;
+    padding: 10px 5px 10px 5px;
+}
+
+.mainContainer:hover {
+    background-color: #dfdfdf;
+}
+
+.playerImage {
+    height: 30px;
+    width: 30px;
+}
+
+.userNameText {
+    font-size: 15px;
+    color: black;
+    height: 100%;
+    margin: 0;
+}
+
+.scoreText {
+    font-size: 13px;
+    color: #999999;
+    height: 100%;
+    margin: 0;
+}

@@ -15,6 +15,8 @@ const Login = (props) => {
             navigate('/game')
         else
             setLoading(false)
+
+        // eslint-disable-next-line
     }, [])
     const loginHandler = () => {
         console.log(loginInfo)

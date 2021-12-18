@@ -1,0 +1,27 @@
+.backdrop {
+    background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.title {
+    width: 100%;
+    text-align: center;
+    font-size: 22px;
+    color: black;
+    font-weight: 800;
+}
+
+.description {
+    width: 100%;
+    text-align: center;
+    font-size: 15px;
+    color: black;
+    font-weight: 500;
+}
+
+.scoreText {
+    width: 100%;
+    text-align: center;
+    font-size: 22px;
+    color: black;
+    font-weight: 800;
+}
