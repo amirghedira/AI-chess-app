@@ -152,6 +152,8 @@ const GamePage = () => {
                 white: getScoreTeam(false),
                 black: getScoreTeam(true)
             })
+
+        // eslint-disable-next-line
     }, [eatedPieces])
 
     const getScoreTeam = (isCurrentUser) => {
