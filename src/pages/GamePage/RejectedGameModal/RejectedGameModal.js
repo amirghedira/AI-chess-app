@@ -14,9 +14,9 @@ const RejectedGameModal = (props) => {
                 </div>
             </ModalHeader>
             <ModalBody style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '100%', margin: '10px' }}>
+                {!props.noRematch && <div style={{ width: '100%', margin: '10px' }}>
                     <Button style={{ width: '100%' }} onClick={props.onRematch}>Rematch</Button>
-                </div>
+                </div>}
                 <div style={{ width: '100%', margin: '10px' }}>
                     <Button style={{ width: '100%' }} onClick={props.onNewGame}>New 5min</Button>
                 </div>

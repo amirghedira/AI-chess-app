@@ -14,10 +14,11 @@ const FindPlayerModal = (props) => {
     }, [props.isOpen])
 
     React.useEffect(() => {
-        axios.get(`/user/search/${searchedUser}`)
-            .then(res => {
-                setUsers(res.data.users)
-            })
+        if (searchedUser.length > 0)
+            axios.get(`/user/search/${searchedUser}`)
+                .then(res => {
+                    setUsers(res.data.users)
+                })
     }, [searchedUser])
     return (
         <Modal style={{ maxWidth: '400px' }} centered backdropClassName={classes.backdrop}

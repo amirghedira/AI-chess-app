@@ -15,6 +15,15 @@
 
 .userInfoContainer {}
 
+.pieceImgEated {
+    height: 25px;
+    width: 25px;
+    margin: 0px -5px 0px -5px;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
 .userNameText {
     font-size: 14px;
     color: white;

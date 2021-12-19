@@ -387,14 +387,18 @@ const getPawnEatingMoves = (board, currentPos, team, isExtra = false, lastMove) 
 
 }
 const getPassedPawn = (team, currentPos, lastMove) => {
-    if (lastMove && lastMove.piece === 'pawn' && currentPos.row === lastMove.to.row && Math.abs(lastMove.from.row - lastMove.to.row) === 2) {
+    if (lastMove
+        && lastMove.piece === 'pawn'
+        && currentPos.row === lastMove.to.row
+        && Math.abs(currentPos.box - lastMove.to.box) === 1
+        && Math.abs(lastMove.from.row - lastMove.to.row) === 2) {
         if (team === 'black')
             return { row: currentPos.row + 1, box: lastMove.to.box }
 
         else
             return { row: currentPos.row - 1, box: lastMove.to.box }
-    } else
-        return null
+    }
+    return null
 }
 const getKingPossibleMoves = (board, currentPos, team) => {
     let possibleMoves = []
@@ -611,7 +615,7 @@ const checkPathIncludesPosition = (pathPositions, position) => {
     return pathPositions.findIndex(pathPosition => pathPosition.row === position.row && pathPosition.box === position.box) >= 0
 }
 const getPieceCheckKingPath = (board, team, kingPosition, piece, piecePosition) => {
-    const oponentTeam = team === 'white' ? 'black' : 'white'
+    const oponentTeam = getOppositeTeam(team)
     let piecePath = []
     switch (piece) {
         case 'rock': {
@@ -720,7 +724,7 @@ const getPieceCheckKingPath = (board, team, kingPosition, piece, piecePosition) 
 }
 
 const isCheckedKing = (board, team, kingPosition) => {
-    const oponentTeam = team === 'white' ? 'black' : 'white'
+    const oponentTeam = getOppositeTeam(team)
 
     const piecesCheckingPosition = []
 
@@ -861,6 +865,10 @@ const cleanBoardImage = (gameBoard) => {
     return newBoard
 
 }
+
+const getOppositeTeam = (team) => {
+    return team === 'white' ? 'black' : 'white'
+}
 export {
     isCheckedKing,
     addBoardImage,
@@ -873,6 +881,7 @@ export {
     checkPieceMovePreventKingCheck,
     checkPiecePreventKingCheck,
     getPassedPawn,
-    isFreeBox
+    isFreeBox,
+    getOppositeTeam
 
 }

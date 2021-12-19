@@ -15,7 +15,6 @@ const AppContext = (props) => {
                 .then((res) => {
                     if (res.data.connectedUser) {
                         setUser(res.data.connectedUser);
-                        console.log(res.data.connectedUser)
                         socket.open()
                         socket.emit("connectuser", LocalStorageService.getAccessToken())
                         setLoadingUser(false);
@@ -38,9 +37,6 @@ const AppContext = (props) => {
         // eslint-disable-next-line
     }, []);
 
-    React.useEffect(() => {
-        console.log(oponent)
-    }, [oponent])
     return (
         <GlobalContext.Provider value={{
             user,

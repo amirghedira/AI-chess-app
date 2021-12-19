@@ -4,6 +4,7 @@ import classes from './Board.module.css'
 
 const Board = (props) => {
 
+
     const getTransformBoard = () => {
         if (props.isFlippedBoard)
             return 'rotate(180deg)'

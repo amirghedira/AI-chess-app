@@ -12,7 +12,8 @@ import {
     checkPiecePreventKingCheck,
     getPassedPawn,
     addBoardImage,
-    cleanBoardImage
+    cleanBoardImage,
+    getOppositeTeam
 } from '../../utils/GameFunctions'
 import EndGameModal from './EndGameModal/EndGameModal'
 import {
@@ -42,6 +43,7 @@ const GamePage = () => {
     const [boardState, setBoardState] = React.useState(null)
     const [clickedBox, setClickedBox] = React.useState(null)
     const [currentTeam, setCurrentTeam] = React.useState('white')
+    const [currentPlayerTeam, setCurrentPlayerTeam] = React.useState('white')
     const [pieceSuggestions, setPieceSuggestions] = React.useState([])
     const [isKingChecked, setIsKingChecked] = React.useState(null)
     const [lastMove, setLastMove] = React.useState(null)
@@ -63,6 +65,7 @@ const GamePage = () => {
     const [loadingModal, setLoadingModal] = React.useState(false)
     const [isOpenRejectedGame, setIsOpenRejectedGame] = React.useState({ isOpen: false })
     const [isOpenFindPlayerModal, setIsOpenFindPlayerModal] = React.useState(false)
+    const [teamsScores, setTeamsScore] = React.useState({ white: '', black: '' })
     React.useEffect(() => {
         if (!context.user)
             return window.location.href = '/login'
@@ -77,6 +80,10 @@ const GamePage = () => {
             setOponent({ ...oponent })
             context.setOponent({ ...oponent })
             setGame(game)
+            if (game.oponents.white === context.user._id)
+                setCurrentPlayerTeam('white')
+            else
+                setCurrentPlayerTeam('black')
             setLoadingModal(false)
             setIsGameEnded(false)
         })
@@ -91,7 +98,7 @@ const GamePage = () => {
                     isOpen: true,
                     title: `${wonTeam} won`,
                     userScore: context.user.score,
-                    score: `${_game.oponents[wonTeam] === context.user._id ? '+7' : '-7'}`,
+                    score: '+7',
                     description: `${wonTeam} won by abandant`
                 })
                 return { ..._game, winnerTeam: wonTeam, result: 'abandant' }
@@ -113,9 +120,12 @@ const GamePage = () => {
     React.useEffect(() => {
         if (!isGameEnded) {
             context.socket.off('played-move')
-            context.socket.on('played-move', ({ boardGame, lastMove }) => {
+            context.socket.on('played-move', ({ boardGame, eatedPiece, lastMove }) => {
                 const receivedBoard = addBoardImage(boardGame)
-
+                if (eatedPiece)
+                    setEatedPieces((_eatedPieces) => {
+                        return [..._eatedPieces, eatedPiece]
+                    })
                 setCurrentTeam((team) => {
                     return team === 'white' ? 'black' : 'white'
                 })
@@ -130,6 +140,48 @@ const GamePage = () => {
 
         // eslint-disable-next-line
     }, [isGameEnded])
+
+    React.useEffect(() => {
+        if (currentPlayerTeam === 'white')
+            setTeamsScore({
+                white: getScoreTeam(true),
+                black: getScoreTeam(false)
+            })
+        else
+            setTeamsScore({
+                white: getScoreTeam(false),
+                black: getScoreTeam(true)
+            })
+    }, [eatedPieces])
+
+    const getScoreTeam = (isCurrentUser) => {
+        if (isCurrentUser) {
+            let score = eatedPieces.filter(eatedPiece => eatedPiece.team !== currentPlayerTeam)
+                .map(piece => +piece.value)
+                .reduce((prevV, currentV) => (prevV + currentV), 0)
+
+            let oponentScore = eatedPieces.filter(eatedPiece => eatedPiece.team === currentPlayerTeam)
+                .map(piece => +piece.value)
+                .reduce((prevV, currentV) => (prevV + currentV), 0)
+
+            if (score - oponentScore > 0)
+                return `+${score - oponentScore}`
+            return ''
+
+        } else {
+            let score = eatedPieces.filter(eatedPiece => eatedPiece.team === currentPlayerTeam)
+                .map(piece => +piece.value)
+                .reduce((prevV, currentV) => (prevV + currentV), 0)
+
+            let oponentScore = eatedPieces.filter(eatedPiece => eatedPiece.team !== currentPlayerTeam)
+                .map(piece => +piece.value)
+                .reduce((prevV, currentV) => (prevV + currentV), 0)
+
+            if (score - oponentScore > 0)
+                return `+${score - oponentScore}`
+            return ''
+        }
+    }
 
 
     React.useEffect(() => {
@@ -183,7 +235,7 @@ const GamePage = () => {
             setTimer({ ...timer, [currentTeam]: minutes + ":" + seconds })
             if (--time < 0) {
                 clearInterval(timerInterval.current)
-                let wonTeam = currentTeam === 'white' ? 'black' : 'white'
+                let wonTeam = getOppositeTeam(currentTeam)
                 setEndGameInfoModal({
                     isOpen: true,
                     title: `${wonTeam} won`,
@@ -202,7 +254,7 @@ const GamePage = () => {
                 setTimer({ ...timer, [currentTeam]: minutes + ":" + seconds })
                 if (--time < 0) {
                     clearInterval(timerInterval.current)
-                    let wonTeam = currentTeam === 'white' ? 'black' : 'white'
+                    let wonTeam = getOppositeTeam(currentTeam)
                     setEndGameInfoModal({
                         isOpen: true,
                         title: `${wonTeam} won`,
@@ -431,13 +483,7 @@ const GamePage = () => {
             return
         } else {
             if (isKingChecked) {
-                let wonTeam = ''
-                if (currentTeam === 'white') {
-                    wonTeam = 'black'
-                } else {
-                    wonTeam = 'white'
-
-                }
+                let wonTeam = getOppositeTeam(currentTeam)
 
                 setEndGameInfoModal({
                     isOpen: true,
@@ -486,6 +532,7 @@ const GamePage = () => {
         setEndGameInfoModal({})
         setLastMove(null)
         setCurrentTeam('white')
+        setCurrentPlayerTeam('white')
         setClickedBox(null)
         setOponent(null)
         setIsOpenRejectedGame({ isOpen: false })
@@ -497,7 +544,7 @@ const GamePage = () => {
             return
         if (currentBoardIndex !== previsousBoards.length - 1)
             return
-        if (game.oponents[currentTeam] !== context.user._id)
+        if (currentTeam !== currentPlayerTeam)
             return
         if (isKingChecked && isKingChecked.team === currentTeam) {
             if (!clickedBox) {
@@ -528,6 +575,7 @@ const GamePage = () => {
                             setPieceSuggestions([])
                             setClickedBox(null)
                             setCurrentTeam('white')
+                            context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
                             return
 
                         } else if (row === 0 && box === 6 && allowedBlackCastling.kingSide) {
@@ -538,6 +586,8 @@ const GamePage = () => {
                             setPieceSuggestions([])
                             setClickedBox(null)
                             setCurrentTeam('white')
+                            context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
+
                             return
                         }
 
@@ -551,7 +601,7 @@ const GamePage = () => {
                             setPieceSuggestions([])
                             setClickedBox(null)
                             setCurrentTeam('black')
-
+                            context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
                             return
                         } else if (row === 7 && box === 6 && allowedWhiteCastling.kingSide) {
 
@@ -562,15 +612,17 @@ const GamePage = () => {
                             setPieceSuggestions([])
                             setClickedBox(null)
                             setCurrentTeam('black')
-
+                            context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
                             return
                         }
                     }
                 }
+                let eatedPiece = null
                 if (clickedBox.piece && clickedBox.piece.piece === 'pawn') {
                     const passedPawnMove = getPassedPawn(currentTeam, clickedBox, lastMove)
                     if (passedPawnMove) {
                         if (passedPawnMove.row === row && passedPawnMove.box === box) {
+                            eatedPiece = _boardState[row - 1][box]
                             if (currentTeam === 'black')
                                 _boardState[row - 1][box] = null
                             else
@@ -584,7 +636,8 @@ const GamePage = () => {
 
                         setPromotePieceModal({
                             isOpen: true,
-                            position: { row, box }
+                            position: { row, box },
+                            currentPosition: { ...clickedBox }
                         })
                         setPieceSuggestions([])
                         setClickedBox(null)
@@ -594,6 +647,7 @@ const GamePage = () => {
                 }
 
                 if (boardState[row][box]) {
+                    eatedPiece = { ...boardState[row][box] }
                     setEatedPieces([...eatedPieces, boardState[row][box]])
                 }
                 _boardState[row][box] = clickedBox.piece
@@ -629,7 +683,7 @@ const GamePage = () => {
                     return 'white'
                 })
                 setLastMove({ from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece })
-                context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
+                context.socket.emit('make-move', { userId: oponent._id, eatedPiece: eatedPiece, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
             }
             setPieceSuggestions([])
             setClickedBox(null)
@@ -709,27 +763,24 @@ const GamePage = () => {
     const choosePromotedPieceHandler = (piece) => {
         const _boardState = [...boardState]
         let oponentTeam = ''
+        let _lastMove = { from: promotePieceModal.currentPosition, to: promotePieceModal.position, piece: promotePieceModal.currentPosition.piece.piece }
+
         if (currentTeam === 'black') {
             oponentTeam = 'white'
-            _boardState[promotePieceModal.position.row - 1][promotePieceModal.position.box] = null
+            _boardState[promotePieceModal.position.row - 1][promotePieceModal.currentPosition.box] = null
 
         } else {
             oponentTeam = 'black'
-            _boardState[promotePieceModal.position.row + 1][promotePieceModal.position.box] = null
+            _boardState[promotePieceModal.position.row + 1][promotePieceModal.currentPosition.box] = null
 
         }
         _boardState[promotePieceModal.position.row][promotePieceModal.position.box] = piece
+        context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: _lastMove })
+        setLastMove(_lastMove)
         setBoardState([..._boardState])
         setPromotePieceModal({ isOpen: false })
         setCurrentTeam(oponentTeam)
-    }
 
-    const getScoreTeam = (team) => {
-        eatedPieces.filter(eatedPiece => eatedPiece.team === 'white')
-            .map(piece => +piece.value)
-            .reduce((prevV, currentV) => {
-                return prevV + currentV
-            }, 0)
     }
     const startNewGameAfteraGameHandler = () => {
         initGame()
@@ -761,14 +812,28 @@ const GamePage = () => {
             .then(res => {
             })
             .catch(err => {
-                console.log(err)
+                setLoadingModal(false)
+                if (err.response.status)
+                    setIsOpenRejectedGame({
+                        isOpen: true,
+                        message: `No online player found`,
+                        noRematch: true
+                    })
             })
     }
     const acceptGameHandler = () => {
 
         context.socket.emit('accept-challenge', { userId: context.oponent._id, oponent: context.user, game: game })
+        const _game = { ...game }
+        initGame()
+        setGame(_game)
+        if (game.oponents.white === context.user._id)
+            setCurrentPlayerTeam('white')
+        else
+            setCurrentPlayerTeam('black')
         setOponent({ ...context.oponent })
         setIsGameEnded(false)
+
         setIsOpenInvitationGame(false)
 
     }
@@ -794,16 +859,12 @@ const GamePage = () => {
     }
     const abandantGameHandler = () => {
         context.socket.emit('abandant-game', { userId: oponent._id, oponent: context.user })
-        let wonTeam
-        if (game.oponents.white === context.user._id)
-            wonTeam = 'black'
-        else
-            wonTeam = 'white'
+        let wonTeam = getOppositeTeam(currentPlayerTeam)
         setEndGameInfoModal({
             isOpen: true,
             title: `${wonTeam} won`,
             userScore: context.user.score,
-            score: `${game.oponents[wonTeam] === context.user._id ? '+7' : '-7'}`,
+            score: '-7',
             description: `${wonTeam} won by abandant`
         })
         setGame({ ...game, winnerTeam: wonTeam, result: 'abandant' })
@@ -830,6 +891,7 @@ const GamePage = () => {
                 toggle={() => setIsOpenRejectedGame({ isOpen: !isOpenRejectedGame.isOpen })}
                 onNewGame={startNewGameAfteraGameHandler}
                 onRematch={rematchHandlerAfterReject}
+                noRematch={isOpenRejectedGame.noRematch}
                 message={isOpenRejectedGame.message}
             />
             <GameInvitationModal
@@ -850,9 +912,9 @@ const GamePage = () => {
                 team={currentTeam}
                 choosePromotedPiece={choosePromotedPieceHandler} />
             <Row style={{ height: '100%', alignItems: 'center', justifyContent: 'center', display: 'flex' }}>
-                <Col xs="2">
+                <Col md="12" lg="2">
                 </Col>
-                <Col xs="8">
+                <Col md="12" lg="8">
                     <Row className={classes.mainUserInfoContainer}>
                         <Col style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <div style={{ display: 'flex' }}>
@@ -864,12 +926,12 @@ const GamePage = () => {
                                         <h5 className={classes.userNameText}>{oponent.username} ({oponent.score})</h5>
                                         :
                                         <h5 className={classes.userNameText}>Oponent</h5>}
-                                    <div style={{ display: 'flex' }}>
-                                        {eatedPieces.filter(eatedPiece => eatedPiece.team === 'black').map((piece, key) => {
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        {eatedPieces.filter(eatedPiece => eatedPiece.team === currentPlayerTeam).map((piece, key) => {
                                             return <div className={classes.pieceImgEated} key={key} style={{ backgroundImage: `url(${piece.img})` }} />
                                         })}
-                                        <h5 style={{ fontSize: '12px', color: 'rgb(110,110,110)' }}>{
-                                            getScoreTeam('black')
+                                        <h5 style={{ fontSize: '13px', margin: '0', paddingLeft: '5px', paddingRight: '5px', color: 'rgb(110,110,110)' }}>{
+                                            teamsScores[currentPlayerTeam === 'black' ? 'white' : 'black']
                                         }</h5>
                                     </div>
                                 </div>
@@ -909,12 +971,12 @@ const GamePage = () => {
                                 </div>
                                 <div className={classes.userInfoContainer}>
                                     <h5 className={classes.userNameText}>{context.user.username} ({context.user.score})</h5>
-                                    <div style={{ display: 'flex' }}>
-                                        {eatedPieces.filter(eatedPiece => eatedPiece.team === 'white').map((piece, key) => {
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        {eatedPieces.filter(eatedPiece => eatedPiece.team !== currentPlayerTeam).map((piece, key) => {
                                             return <div className={classes.pieceImgEated} key={key} style={{ backgroundImage: `url(${piece.img})` }} />
                                         })}
-                                        <h5 style={{ fontSize: '12px', color: 'rgb(110,110,110)' }}>{
-                                            getScoreTeam('white')
+                                        <h5 style={{ fontSize: '13px', margin: '0', paddingLeft: '5px', paddingRight: '5px', color: 'rgb(110,110,110)' }}>{
+                                            teamsScores[currentPlayerTeam]
                                         }</h5>
                                     </div>
 
@@ -939,7 +1001,7 @@ const GamePage = () => {
                         </Col>
                     </Row>
                 </Col>
-                <Col xs="2">
+                <Col md="12" lg="2">
                     <Button style={{ marginBottom: '10px', width: '100%' }} onClick={startNewGameHandler}>
                         New Game
                     </Button>
