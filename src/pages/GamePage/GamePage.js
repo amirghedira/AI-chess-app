@@ -56,7 +56,7 @@ const GamePage = () => {
     const [isGameEnded, setIsGameEnded] = React.useState(true)
     const [endGameInfoModal, setEndGameInfoModal] = React.useState({ isOpen: false })
     const [promotePieceModal, setPromotePieceModal] = React.useState({ isOpen: false })
-    const [timer, setTimer] = React.useState({ black: '05:00', white: '05:00' })
+    const [timer, setTimer] = React.useState({ black: '10:00', white: '10:00' })
     const [oponent, setOponent] = React.useState(null)
     const timerInterval = React.useRef(null)
     const context = React.useContext(GlobalContext)
@@ -538,7 +538,7 @@ const GamePage = () => {
         setClickedBox(null)
         setOponent(null)
         setIsOpenRejectedGame({ isOpen: false })
-        setTimer({ black: '05:00', white: '05:00' })
+        setTimer({ black: '10:00', white: '10:00' })
     }
 
     const clickedPieceHandler = async (row, box) => {
