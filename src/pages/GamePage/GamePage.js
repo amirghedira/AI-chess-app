@@ -56,7 +56,7 @@ const GamePage = () => {
     const [isGameEnded, setIsGameEnded] = React.useState(true)
     const [endGameInfoModal, setEndGameInfoModal] = React.useState({ isOpen: false })
     const [promotePieceModal, setPromotePieceModal] = React.useState({ isOpen: false })
-    const [timer, setTimer] = React.useState({ black: '20:00', white: '20:00' })
+    const [timer, setTimer] = React.useState({ black: '05:00', white: '05:00' })
     const [oponent, setOponent] = React.useState(null)
     const timerInterval = React.useRef(null)
     const context = React.useContext(GlobalContext)
@@ -75,19 +75,40 @@ const GamePage = () => {
             context.setOponent(oponent)
             setIsOpenInvitationGame(true)
         })
+        context.socket.on('has-been-accepted-challenge', ({ oponent, game }) => {
+            initGame()
+            setGame(game)
+            let _currentPlayerTeam
+            if (game.oponents.white === context.user._id)
+                _currentPlayerTeam = 'white'
+            else
+                _currentPlayerTeam = 'black'
+            setCurrentPlayerTeam(_currentPlayerTeam)
+            context.socket.emit('join-game', { game: game, team: _currentPlayerTeam })
+
+            setOponent({ ...oponent })
+            setIsGameEnded(false)
+            setIsOpenInvitationGame(false)
+        })
         context.socket.on('accepted-challenge', ({ oponent, game }) => {
             initGame()
             setOponent({ ...oponent })
             context.setOponent({ ...oponent })
             setGame(game)
+
+            let _currentPlayerTeam
             if (game.oponents.white === context.user._id)
-                setCurrentPlayerTeam('white')
+                _currentPlayerTeam = 'white'
             else
-                setCurrentPlayerTeam('black')
+                _currentPlayerTeam = 'black'
+            setCurrentPlayerTeam(_currentPlayerTeam)
+            context.socket.emit('join-game', { game: game, team: _currentPlayerTeam })
+
             setLoadingModal(false)
             setIsGameEnded(false)
         })
         context.socket.on('abandaned-game', () => {
+            console.log('abandaned')
             setGame((_game) => {
                 let wonTeam
                 if (_game.oponents.white === context.user._id)
@@ -113,22 +134,30 @@ const GamePage = () => {
             })
             setLoadingModal(false)
         })
+
+        return () => {
+            context.socket.emit('left-room', { team: 'white' })
+            context.socket.disconnect()
+        }
         // eslint-disable-next-line
-    }, [])
+    }, [context.socket])
+
 
 
     React.useEffect(() => {
         if (!isGameEnded) {
             context.socket.off('played-move')
             context.socket.on('played-move', ({ boardGame, eatedPiece, lastMove }) => {
+                console.log('played move')
                 const receivedBoard = addBoardImage(boardGame)
                 if (eatedPiece)
                     setEatedPieces((_eatedPieces) => {
                         return [..._eatedPieces, eatedPiece]
                     })
-                setCurrentTeam((team) => {
-                    return team === 'white' ? 'black' : 'white'
+                setCurrentTeam((_team) => {
+                    return getOppositeTeam(_team)
                 })
+
                 setIsKingChecked(null)
                 setBoardState(JSON.parse(JSON.stringify(receivedBoard)))
                 setLastMove(lastMove)
@@ -538,16 +567,23 @@ const GamePage = () => {
         setClickedBox(null)
         setOponent(null)
         setIsOpenRejectedGame({ isOpen: false })
-        setTimer({ black: '20:00', white: '20:00' })
+        setTimer({ black: '05:00', white: '05:00' })
     }
+
+    React.useEffect(() => {
+
+        console.log(currentTeam)
+    }, [currentTeam])
 
     const clickedPieceHandler = async (row, box) => {
         if (isGameEnded)
             return
         if (currentBoardIndex !== previsousBoards.length - 1)
             return
-        if (currentTeam !== currentPlayerTeam)
+        if (currentTeam !== currentPlayerTeam) {
+            console.log(currentTeam, currentPlayerTeam)
             return
+        }
         if (isKingChecked && isKingChecked.team === currentTeam) {
             if (!clickedBox) {
                 if (boardState[row][box]) {
@@ -577,7 +613,7 @@ const GamePage = () => {
                             setPieceSuggestions([])
                             setClickedBox(null)
                             setCurrentTeam('white')
-                            context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
+                            context.socket.emit('make-move', { boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
                             return
 
                         } else if (row === 0 && box === 6 && allowedBlackCastling.kingSide) {
@@ -588,7 +624,7 @@ const GamePage = () => {
                             setPieceSuggestions([])
                             setClickedBox(null)
                             setCurrentTeam('white')
-                            context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
+                            context.socket.emit('make-move', { boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
 
                             return
                         }
@@ -603,7 +639,7 @@ const GamePage = () => {
                             setPieceSuggestions([])
                             setClickedBox(null)
                             setCurrentTeam('black')
-                            context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
+                            context.socket.emit('make-move', { boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
                             return
                         } else if (row === 7 && box === 6 && allowedWhiteCastling.kingSide) {
 
@@ -614,7 +650,7 @@ const GamePage = () => {
                             setPieceSuggestions([])
                             setClickedBox(null)
                             setCurrentTeam('black')
-                            context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
+                            context.socket.emit('make-move', { boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
                             return
                         }
                     }
@@ -685,7 +721,7 @@ const GamePage = () => {
                     return 'white'
                 })
                 setLastMove({ from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece })
-                context.socket.emit('make-move', { userId: oponent._id, eatedPiece: eatedPiece, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
+                context.socket.emit('make-move', { eatedPiece: eatedPiece, boardGame: cleanBoardImage(_boardState), lastMove: { from: { ...clickedBox }, to: { row, box }, piece: clickedBox.piece.piece } })
             }
             setPieceSuggestions([])
             setClickedBox(null)
@@ -777,7 +813,7 @@ const GamePage = () => {
 
         }
         _boardState[promotePieceModal.position.row][promotePieceModal.position.box] = piece
-        context.socket.emit('make-move', { userId: oponent._id, boardGame: cleanBoardImage(_boardState), lastMove: _lastMove })
+        context.socket.emit('make-move', { boardGame: cleanBoardImage(_boardState), lastMove: _lastMove })
         setLastMove(_lastMove)
         setBoardState([..._boardState])
         setPromotePieceModal({ isOpen: false })
@@ -829,10 +865,15 @@ const GamePage = () => {
         const _game = { ...game }
         initGame()
         setGame(_game)
+
+        let _currentPlayerTeam
         if (game.oponents.white === context.user._id)
-            setCurrentPlayerTeam('white')
+            _currentPlayerTeam = 'white'
         else
-            setCurrentPlayerTeam('black')
+            _currentPlayerTeam = 'black'
+        setCurrentPlayerTeam(_currentPlayerTeam)
+        context.socket.emit('join-game', { game: game, team: _currentPlayerTeam })
+
         setOponent({ ...context.oponent })
         setIsGameEnded(false)
 
@@ -860,7 +901,7 @@ const GamePage = () => {
             })
     }
     const abandantGameHandler = () => {
-        context.socket.emit('abandant-game', { userId: oponent._id, oponent: context.user })
+        context.socket.emit('abandant-game', { oponent: context.user })
         let wonTeam = getOppositeTeam(currentPlayerTeam)
         setEndGameInfoModal({
             isOpen: true,
